@@ -14,7 +14,8 @@ fs.mkdirSync(DATA, { recursive: true });
 const CONFIG_FILE = path.join(DATA, 'config.json');
 const STATE_FILE = path.join(DATA, 'state.json');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
-  '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
+  '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json' };
 
 const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
 let config = Object.assign({ host: '127.0.0.1', port: 1025 }, readJson(CONFIG_FILE, {}));

@@ -1,0 +1,15 @@
+{
+  "name": "설교 리모컨",
+  "short_name": "설교 리모컨",
+  "description": "설교원고를 보며 ProPresenter 슬라이드·배경·자막을 넘깁니다.",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#3f7d5c",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

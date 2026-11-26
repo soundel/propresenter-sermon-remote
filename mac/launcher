@@ -1,0 +1,23 @@
+#!/bin/bash
+# 설교 리모컨.app 실행기 — 앱 안에 들어 있는 Node.js로 서버를 켜고 준비 화면을 엽니다.
+RES="$(cd "$(dirname "$0")/../Resources" && pwd)"
+DATA="$HOME/Library/Application Support/설교 리모컨"
+PORT="${PORT:-8080}"
+mkdir -p "$DATA"
+
+# 이미 켜져 있으면 화면만 다시 엽니다.
+if /usr/bin/curl -s -m 1 "http://127.0.0.1:$PORT/api/version" | grep -q '"version"'; then
+  open "http://localhost:$PORT"
+  exit 0
+fi
+
+# 실행기(셸 스크립트)가 로제타(인텔 흉내)로 켜져도 uname -m이 x86_64로 나오므로,
+# 실제 칩을 sysctl로 확인해 애플 실리콘이면 arm64용 Node를 씁니다.
+if [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+  NODE="$RES/node-arm64"; ARCH=(/usr/bin/arch -arm64)
+else
+  NODE="$RES/node-x64";   ARCH=()
+fi
+
+export SR_APP=1 SR_DATA_DIR="$DATA" PORT
+exec "${ARCH[@]}" "$NODE" "$RES/app/server.js" > "$DATA/server.log" 2>&1

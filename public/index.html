@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="설교 리모컨">
+<title>설교 리모컨</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+@font-face { font-family: "Pretendard Local"; src: url("fonts/PretendardVariable.woff2") format("woff2"); font-weight: 100 900; }
+:root {
+  --bg:#f5f5f7; --card:#fff; --text:#1d1d1f; --sub:#6e6e73; --line:#d2d2d7;
+  --green:#3f7d5c; --green-soft:#e6f0ea; --red:#c0392b; --fs:26px;
+}
+:root.dark { --bg:#000; --card:#1c1c1e; --text:#f5f5f7; --sub:#98989d; --line:#38383a; --green:#5fae85; --green-soft:#16261d; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; margin:0; }
+body { background:var(--bg); color:var(--text); font-family:"Pretendard Local","Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif; overscroll-behavior:none; }
+button { font:inherit; color:inherit; border:0; background:none; cursor:pointer; touch-action:manipulation; }
+.hidden { display:none !important; }
+
+/* 준비 화면 */
+#setup { max-width:860px; margin:0 auto; padding:40px 24px 80px; }
+#setup h1 { font-size:34px; font-weight:700; letter-spacing:-.02em; margin:0 0 6px; }
+#setup .lead { color:var(--sub); margin:0 0 28px; font-size:17px; }
+.card { background:var(--card); border-radius:20px; padding:24px; margin-bottom:18px; }
+.card h2 { font-size:20px; margin:0 0 4px; font-weight:650; }
+.card .hint { color:var(--sub); font-size:14px; margin:0 0 16px; line-height:1.5; }
+.opt { color:var(--sub); font-weight:500; font-size:15px; }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+input,textarea { font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:12px 14px; outline:none; }
+input:focus,textarea:focus { border-color:var(--green); }
+textarea { width:100%; min-height:220px; line-height:1.6; resize:vertical; margin-top:12px; }
+.btn { background:var(--green-soft); color:var(--green); font-weight:600; border-radius:999px; padding:12px 20px; }
+.btn.primary { background:var(--green); color:#fff; }
+.btn.big { font-size:19px; padding:18px 36px; }
+.msg { font-size:14px; margin-top:12px; color:var(--sub); line-height:1.5; }
+.msg.ok { color:var(--green); } .msg.err { color:var(--red); }
+#slideList,#mediaList { margin-top:14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+#presPick,#docPick { margin-top:12px; }
+.pickTabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.pickTabs .btn { padding:8px 14px; font-size:14px; }
+.pickTabs .btn.on { background:var(--green); color:#fff; }
+.pickList { max-height:320px; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line); border-radius:14px; }
+.pickList button { display:flex; justify-content:space-between; gap:12px; width:100%; text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); font-size:15px; }
+.pickList button:last-child { border-bottom:0; }
+.pickList button:active { background:var(--green-soft); }
+.pickList small { color:var(--sub); white-space:nowrap; }
+.pickList button.cur { color:var(--green); font-weight:650; }
+.pickList .none { padding:16px; color:var(--sub); font-size:14px; }
+.sl { background:var(--bg); border-radius:12px; padding:8px; font-size:12px; color:var(--sub); overflow:hidden; }
+.sl img { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:8px; background:#000; display:block; margin-bottom:6px; }
+.sl b { color:var(--green); font-size:14px; margin-right:4px; }
+code { background:var(--green-soft); color:var(--green); padding:2px 7px; border-radius:6px; font-size:.92em; }
+#gBox { background:var(--bg); border-radius:14px; padding:14px 16px; margin-bottom:14px; font-size:14px; line-height:1.6; }
+#gBox details { margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
+#gBox summary { cursor:pointer; color:var(--green); font-weight:600; }
+#gBox ol { margin:8px 0; padding-left:20px; color:var(--sub); }
+#foot { text-align:center; color:var(--sub); font-size:13px; margin-top:36px; }
+
+/* 설교 화면 */
+#preach { height:100%; display:flex; flex-direction:column; }
+#top { display:flex; align-items:center; gap:14px; padding:10px 18px; padding-top:max(10px,env(safe-area-inset-top)); border-bottom:1px solid var(--line); font-size:15px; }
+#top .title { font-weight:600; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#top .tb { padding:8px 12px; border-radius:10px; background:var(--card); font-weight:600; }
+#dot { width:10px; height:10px; border-radius:50%; background:var(--sub); }
+#dot.ok { background:var(--green); } #dot.err { background:var(--red); }
+#timer { font-variant-numeric:tabular-nums; font-size:20px; min-width:84px; text-align:center; }
+#clock { color:var(--sub); font-variant-numeric:tabular-nums; }
+#main { flex:1; display:flex; min-height:0; }
+#script { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:28px 36px 50vh; font-size:var(--fs); line-height:1.75; letter-spacing:-.01em; }
+#script > * { max-width:900px; margin-left:auto; margin-right:auto; }
+#script h2 { font-size:1.15em; font-weight:700; color:var(--green); margin-top:1.6em; margin-bottom:.4em; }
+#script p { margin-top:0; margin-bottom:.9em; padding-left:14px; border-left:4px solid transparent; }
+#script p.now { border-left-color:var(--green); }
+.cue { display:inline-flex; align-items:center; gap:6px; vertical-align:middle; margin:0 4px; padding:4px 14px; border-radius:999px; border:2px solid var(--green); color:var(--green); font-size:.7em; font-weight:650; line-height:1.5; max-width:340px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cue.done { opacity:.4; }
+.cue.live { background:var(--green); color:#fff; opacity:1; }
+.cue.clear { border-color:var(--sub); color:var(--sub); }
+.cue.bg { border-style:dashed; }
+.cue.bg.live { border-style:solid; }
+.cue.sub { display:inline-block; white-space:normal; max-width:100%; overflow:visible; font-size:1em; font-weight:600; text-align:left; line-height:1.6; border-radius:14px; padding:6px 14px; margin:4px 2px; color:var(--text); border-color:var(--hc, var(--green)); background:color-mix(in srgb, var(--hc, var(--green)) 14%, transparent); }
+.cue.sub.live { background:var(--hc, var(--green)); color:#000; opacity:1; }
+.cue.sub .ref { display:block; font-size:.75em; opacity:.75; }
+.cue.mini { padding:2px 10px; font-size:.55em; }
+.subRow { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+.subRow:last-child { border-bottom:0; }
+.subRow .sw { width:18px; height:18px; border-radius:6px; flex:none; }
+.subRow select { font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:8px 10px; max-width:240px; }
+.cue.clear.live { background:var(--sub); color:var(--bg); }
+#side { width:250px; padding:18px; border-left:1px solid var(--line); display:flex; flex-direction:column; gap:16px; }
+#side .lab { font-size:13px; color:var(--sub); font-weight:600; margin-bottom:6px; }
+#side .thumb { width:100%; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; color:#777; font-size:13px; text-align:center; padding:0; position:relative; }
+#side .thumb img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+#side .live .thumb { outline:3px solid var(--green); }
+#side .cap { font-size:13px; color:var(--sub); margin-top:6px; line-height:1.4; max-height:3.6em; overflow:hidden; }
+@media (max-width:820px) { #side { display:none; } #script { padding:20px 20px 50vh; } }
+#bar { display:flex; gap:12px; padding:12px 18px; padding-bottom:max(12px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); }
+#bar button { height:76px; border-radius:20px; background:var(--card); font-size:19px; font-weight:650; flex:1; }
+#bar #next { flex:3; background:var(--green); color:#fff; font-size:24px; }
+#bar button:active { transform:scale(.98); opacity:.8; }
+#toast { position:fixed; left:50%; bottom:120px; transform:translateX(-50%); background:var(--red); color:#fff; padding:12px 22px; border-radius:999px; font-weight:600; font-size:16px; z-index:9; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login" class="hidden" style="max-width:420px; margin:0 auto; padding:18vh 24px 0; text-align:center">
+  <h1 style="font-size:30px; font-weight:700; letter-spacing:-.02em; margin:0 0 8px">설교 리모컨</h1>
+  <p style="color:var(--sub); margin:0 0 24px">접속 비밀번호를 입력하세요.</p>
+  <form onsubmit="doLogin(); return false">
+    <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호" style="width:100%; text-align:center; font-size:20px; padding:16px">
+    <button class="btn primary big" style="width:100%; margin-top:12px">들어가기</button>
+  </form>
+  <div class="msg" id="loginMsg">비밀번호는 맥의 서버 창(터미널)에 처음 한 번 표시됩니다. 잊었다면 그 맥에서 새로 정할 수 있습니다.</div>
+</div>
+
+<!-- 준비 화면 -->
+<div id="setup" class="hidden">
+  <h1>설교 리모컨</h1>
+  <p class="lead">원고를 보면서 ProPresenter 슬라이드·배경·자막을 함께 넘깁니다.</p>
+
+  <div class="card hidden" id="infoCard" style="border:2px solid var(--green-soft)">
+    <h2>아이패드에서 접속하기 <span class="opt">이 맥에서만 보입니다</span></h2>
+    <p class="hint">아이패드를 이 맥과 같은 와이파이에 연결하고, 사파리 주소창에 아래 주소를 입력하세요.</p>
+    <div id="infoAddr" style="font-size:22px; font-weight:650; line-height:1.6; font-variant-numeric:tabular-nums"></div>
+    <div id="infoPw" class="msg"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" onclick="shutdown()">설교 리모컨 끄기</button>
+      <span class="hint" style="margin:0" id="infoQuit"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. ProPresenter 연결</h2>
+    <p class="hint">ProPresenter → 설정 → Network에서 <b>Enable Network</b>를 켜고, 거기 표시된 Port 번호를 입력하세요. 이 서버가 ProPresenter와 같은 맥에서 돌고 있다면 주소는 <code>127.0.0.1</code> 그대로 둡니다.</p>
+    <div class="row">
+      <input id="host" placeholder="주소" style="width:190px">
+      <input id="port" placeholder="포트" inputmode="numeric" style="width:110px">
+      <button class="btn" onclick="saveConfig()">연결 확인</button>
+    </div>
+    <div class="msg" id="connMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. 설교 슬라이드 불러오기 <span class="opt">선택</span></h2>
+    <p class="hint">재생목록이나 라이브러리에서 이번 설교 프레젠테이션을 고르세요. 각 슬라이드의 번호가 표시됩니다. 자막만 쓴다면 건너뛰어도 됩니다.</p>
+    <div class="row">
+      <button class="btn" onclick="openPresPick()">목록에서 선택</button>
+      <button class="btn" onclick="loadPres()">ProPresenter에서 선택된 것 가져오기</button>
+    </div>
+    <div id="presPick" class="hidden">
+      <div class="pickTabs" id="presSrc"></div>
+      <input id="presFilter" placeholder="이름으로 찾기" oninput="renderPresPick()" style="width:100%; margin-bottom:10px">
+      <div class="pickList" id="presItems"></div>
+    </div>
+    <div class="msg" id="presMsg"></div>
+    <div id="slideList"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. 배경 불러오기 <span class="opt">선택</span></h2>
+    <p class="hint">슬라이드는 그대로 두고 배경만 바꿀 때 씁니다. ProPresenter 미디어 빈에서 배경을 모아 둔 재생목록을 고르면 번호가 붙습니다. 1번 배경은 <b>기본 배경</b>이 되어, 설교 화면 아래의 "기본 배경" 버튼으로 언제든 되돌릴 수 있습니다.</p>
+    <button class="btn" onclick="loadMediaLists()">미디어 재생목록 보기</button>
+    <div class="row" id="mediaLists" style="margin-top:12px"></div>
+    <div class="msg" id="mediaMsg"></div>
+    <div id="mediaList"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. 설교원고</h2>
+    <p class="hint">원고에서 화면을 바꿀 자리에 표시를 넣습니다.<br>
+      <code>[[3]]</code> 3번 슬라이드 · <code>[[]]</code> 바로 다음 슬라이드 · <code>[[지움]]</code> 슬라이드 지우기 · <code>[[5 요 3:16]]</code>처럼 메모를 붙일 수 있습니다.<br>
+      배경만 바꾸기: <code>[[배경 2]]</code> 2번 배경 · <code>[[배경 하늘]]</code> 이름에 "하늘"이 들어간 배경 · <code>[[배경지움]]</code> 배경 지우기<br>
+      자막: <code>{{문구}}</code> · 줄 나눔 <code>{{요 3:16 / 하나님이…}}</code> · 색 지정 <code>{{파랑: …}}</code> · <code>[[자막지움]]</code></p>
+    <div id="gBox"></div>
+    <div class="row">
+      <input id="docUrl" placeholder="구글 문서 주소 (https://docs.google.com/document/d/…)" style="flex:1; min-width:240px">
+      <button class="btn" onclick="loadDoc()">가져오기</button>
+      <button class="btn hidden" id="docPickBtn" onclick="openDocPick()">내 문서에서 선택</button>
+    </div>
+    <div id="docPick" class="hidden">
+      <input id="docFilter" placeholder="문서 이름으로 찾기" oninput="clearTimeout(docT); docT = setTimeout(loadDocList, 350)" style="width:100%; margin-bottom:10px">
+      <div class="pickList" id="docItems"></div>
+    </div>
+    <div id="docTabs" class="hidden" style="margin-top:12px">
+      <div class="row" style="flex-wrap:nowrap">
+        <div style="flex:1; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis"><span style="color:var(--sub)">탭</span> &nbsp;<b id="docTabName"></b> <span style="color:var(--sub)" id="docTabCount"></span></div>
+        <button class="btn" style="padding:8px 16px; font-size:14px" onclick="toggleTabPick()">다른 탭 선택</button>
+      </div>
+      <div id="docTabPick" class="hidden" style="margin-top:10px">
+        <input id="tabFilter" placeholder="탭 이름으로 찾기" oninput="renderTabs()" style="width:100%; margin-bottom:10px">
+        <div class="pickList" id="tabItems"></div>
+      </div>
+    </div>
+    <textarea id="text" placeholder="또는 원고를 여기에 붙여 넣으세요" oninput="clearTimeout(subT); subT = setTimeout(renderSubs, 500)"></textarea>
+    <div class="msg" id="docMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>5. 자막 틀 <span class="opt">자막을 쓸 때</span></h2>
+    <p class="hint">원고의 <code>{{문구}}</code>(또는 구글 계정 연결 시 형광펜 칠한 문구)는 누르면 자막으로 뜨는 버튼이 됩니다. 색마다 ProPresenter의 어떤 <b>메시지</b>(자막 틀)로 띄울지 정하세요.<br>
+      메시지 이름에 색 이름(예: "노랑 자막", "파랑 성경")이 들어 있으면 처음 가져올 때 자동으로 연결됩니다. 아무 색도 쓰지 않은 <code>{{문구}}</code>는 "기본" 틀로 뜹니다.<br>
+      텍스트 토큰이 2개인 틀은 <b>첫 줄</b>(예: 성경 주소)과 <b>나머지</b>(본문)를 나눠 넣습니다.</p>
+    <button class="btn" onclick="loadMsgs(true)">ProPresenter 메시지 목록 가져오기</button>
+    <div class="msg" id="subMsg"></div>
+    <div id="subRows" style="margin-top:8px"></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:12px;color:var(--sub);font-size:14px"><input type="checkbox" id="keepSlide" onchange="S.subKeepSlide = this.checked; save()"> 자막을 띄워도 슬라이드를 그대로 두기 (끄면 자막·슬라이드가 서로 겹치지 않게 자동으로 바꿔 띄웁니다)</label>
+  </div>
+
+  <div class="row" style="justify-content:center; margin-top:28px">
+    <button class="btn primary big" onclick="startPreach()">설교 화면 열기</button>
+  </div>
+
+  <div class="card hidden" id="pwCard" style="margin-top:40px">
+    <h2>접속 비밀번호 <span class="opt">이 맥에서만 보입니다</span></h2>
+    <p class="hint">아이패드 등 다른 기기는 이 비밀번호로 한 번 로그인해야 합니다. 바꾸면 이미 로그인한 기기도 다시 입력해야 합니다.</p>
+    <div class="row">
+      <input id="newPw" type="text" autocomplete="off" placeholder="새 비밀번호 (4자 이상)" style="width:240px">
+      <button class="btn" onclick="changePw()">비밀번호 바꾸기</button>
+    </div>
+    <div class="msg" id="pwMsg"></div>
+  </div>
+
+  <div id="foot">설교 리모컨 <span id="ver"></span> · 사용 방법과 문제 해결은 프로그램 폴더의 <b>docs</b> 안내서를 보세요.</div>
+</div>
+
+<!-- 설교 화면 -->
+<div id="preach" class="hidden">
+  <div id="top">
+    <button class="tb" onclick="showSetup()">준비</button>
+    <div id="dot"></div>
+    <div class="title" id="title"></div>
+    <div id="clock"></div>
+    <button class="tb" id="timer" onclick="toggleTimer()">0:00</button>
+    <button class="tb" onclick="resetTimer()">↺</button>
+    <button class="tb" onclick="font(-2)">가−</button>
+    <button class="tb" onclick="font(2)">가+</button>
+    <button class="tb" onclick="toggleDark()">◐</button>
+  </div>
+  <div id="main">
+    <div id="script"></div>
+    <div id="side">
+      <div class="live"><div class="lab">지금 화면</div><div class="thumb" id="thNow">—</div><div class="cap" id="capNow"></div></div>
+      <div><div class="lab">다음</div><div class="thumb" id="thNext">—</div><div class="cap" id="capNext"></div></div>
+    </div>
+  </div>
+  <div id="bar">
+    <button onclick="go(-1)">이전</button>
+    <button id="baseBg" class="hidden" onclick="baseBg()">기본 배경</button>
+    <button onclick="doClear()">자막·슬라이드 지우기</button>
+    <button id="next" onclick="go(1)">다음 ▶</button>
+  </div>
+</div>
+<div id="toast" class="hidden"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+/* ---------- 접속 비밀번호 ---------- */
+const rawFetch = window.fetch.bind(window);
+window.fetch = async (...a) => {            // 로그인이 풀리면 어디서든 로그인 화면으로
+  const r = await rawFetch(...a);
+  if (r.status === 401 && r.headers.get('X-Auth') === 'required') showLogin();
+  return r;
+};
+function showLogin() { for (const id of ['setup', 'preach']) $(id).classList.add('hidden'); $('login').classList.remove('hidden'); }
+async function doLogin() {
+  const r = await rawFetch('/api/login', { method: 'POST', body: JSON.stringify({ password: $('pw').value }) });
+  if (r.ok) return location.reload();
+  let e = '로그인하지 못했습니다.'; try { e = (await r.json()).error; } catch {}
+  msg('loginMsg', e, 'err'); $('pw').value = '';
+}
+async function changePw() {
+  const r = await fetch('/api/auth/password', { method: 'POST', body: JSON.stringify({ password: $('newPw').value }) });
+  const j = await r.json();
+  if (r.ok) { $('newPw').value = ''; msg('pwMsg', '비밀번호를 바꿨습니다. 다른 기기는 새 비밀번호로 다시 로그인해야 합니다.', 'ok'); }
+  else msg('pwMsg', j.error, 'err');
+}
+const S = { docUrl:'', text:'', pres:null, media:null, msgs:[], subs:{}, fs:26, dark:null };   // 서버에 저장되는 상태
+let liveMsgs = [];
+let cues = [], cur = -1, tStart = 0, tAcc = 0, tRun = false, subT;
+
+/* ---------- 공통 ---------- */
+async function pp(path, opt) {
+  const r = await fetch('/pp/' + path, opt);
+  if (!r.ok) { let d = ''; try { d = (await r.json()).error || ''; } catch {} throw new Error(d || 'HTTP ' + r.status); }
+  if (r.status === 204) return null;
+  const t = await r.text(); try { return JSON.parse(t); } catch { return t; }
+}
+const msg = (id, text, cls='') => { const e = $(id); e.textContent = text; e.className = 'msg ' + cls; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let saveT; function save() { clearTimeout(saveT); saveT = setTimeout(() => fetch('/api/state', { method:'POST', body: JSON.stringify(S) }).catch(()=>{}), 400); }
+let toastT; function toast(t) { $('toast').textContent = t; $('toast').classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.add('hidden'), 3500); }
+const thumbUrl = i => `/pp/v1/presentation/${S.pres.uuid}/thumbnail/${i}?quality=400&t=${S.pres.loaded}`;
+
+/* ---------- 1. 연결 ---------- */
+async function saveConfig() {
+  await fetch('/api/config', { method:'POST', body: JSON.stringify({ host: $('host').value, port: $('port').value }) });
+  const ok = await checkConn(true);
+  if (ok && !S.msgs.length) loadMsgs(false);
+  return ok;
+}
+async function checkConn(verbose) {
+  try {
+    const v = await pp('version');
+    const ver = v?.host_description || v?.api_version || '';
+    if (verbose) msg('connMsg', '연결됨 · ' + (v?.name || 'ProPresenter') + ' ' + ver, 'ok');
+    $('dot').className = 'ok'; return true;
+  } catch (e) {
+    if (verbose) msg('connMsg', '연결 실패: ' + e.message + ' — ProPresenter가 켜져 있는지, Network 설정과 포트 번호를 확인하세요.', 'err');
+    $('dot').className = 'err'; return false;
+  }
+}
+
+/* ---------- 2. 프레젠테이션 ---------- */
+/* 목록에서 선택: 재생목록(이번 주 순서) + 라이브러리 */
+let presSrc = [], presCur = -1, presItems = [];
+async function openPresPick() {
+  $('presPick').classList.remove('hidden'); msg('presMsg', '목록을 가져오는 중…');
+  try {
+    presSrc = [];
+    try {
+      const walk = (a, path) => { for (const p of a || []) { const nm = (path ? path + ' / ' : '') + (p.id?.name || '');
+        if (p.children?.length) walk(p.children, nm); else if (p.id?.uuid && p.type !== 'group') presSrc.push({ kind: 'playlist', id: p.id.uuid, name: nm }); } };
+      const r = await pp('v1/playlists'); walk(Array.isArray(r) ? r : r?.playlists || r?.children, '');
+    } catch {}
+    try {
+      const r = await pp('v1/libraries');
+      for (const l of (Array.isArray(r) ? r : r?.libraries || [])) { const id = l.id || l; if (id?.uuid) presSrc.push({ kind: 'library', id: id.uuid, name: id.name || '' }); }
+    } catch {}
+    if (!presSrc.length) throw new Error('재생목록이나 라이브러리를 찾지 못했습니다. 1번에서 연결이 되는지 먼저 확인해 주세요.');
+    msg('presMsg', '재생목록 또는 라이브러리를 고른 뒤 프레젠테이션을 누르세요.');
+    $('presSrc').innerHTML = presSrc.map((x, i) => `<button class="btn" id="ps${i}" onclick="pickSrc(${i})">${x.kind === 'playlist' ? '▤ ' : '▣ '}${esc(x.name || '이름 없음')}</button>`).join('');
+    pickSrc(Math.max(0, presSrc.findIndex(x => x.kind === 'playlist')));
+  } catch (e) { msg('presMsg', e.message, 'err'); }
+}
+async function pickSrc(i) {
+  presCur = i; presItems = [];
+  presSrc.forEach((_, k) => $('ps' + k).classList.toggle('on', k === i));
+  $('presItems').innerHTML = '<div class="none">가져오는 중…</div>';
+  try {
+    const x = presSrc[i], r = await pp(x.kind === 'playlist' ? 'v1/playlist/' + x.id : 'v1/library/' + x.id);
+    for (const it of r?.items || []) {
+      if (x.kind === 'playlist') {
+        const uuid = it.presentation_info?.presentation_uuid || (it.type === 'presentation' ? it.id?.uuid : null);
+        if (uuid) presItems.push({ uuid, name: it.id?.name || '' });
+      } else { const id = it.id || it; if (id?.uuid) presItems.push({ uuid: id.uuid, name: id.name || '' }); }
+    }
+    if (i === presCur) renderPresPick();
+  } catch (e) { $('presItems').innerHTML = `<div class="none">${esc(e.message)}</div>`; }
+}
+function renderPresPick() {
+  const f = $('presFilter').value.replace(/\s/g, '').toLowerCase();
+  const list = presItems.map((x, i) => ({ x, i })).filter(o => !f || o.x.name.replace(/\s/g, '').toLowerCase().includes(f));
+  $('presItems').innerHTML = list.length ? list.slice(0, 200).map(o => `<button onclick="choosePres(${o.i})">${esc(o.x.name || '이름 없음')}</button>`).join('')
+    : '<div class="none">프레젠테이션이 없습니다.</div>';
+}
+function choosePres(i) { $('presPick').classList.add('hidden'); loadPres(presItems[i]); }
+
+const pickId = o => o?.presentation?.id || (o?.id?.uuid ? o.id : null) || (o?.uuid ? o : null);
+async function loadPres(chosen) {
+  msg('presMsg', '가져오는 중…');
+  try {
+    let id = chosen?.uuid ? chosen : null;
+    if (!id) for (const p of ['v1/presentation/focused', 'v1/presentation/active']) {
+      try { id = pickId(await pp(p)); } catch {}
+      if (id?.uuid) break;
+    }
+    if (!id?.uuid) throw new Error('선택된 프레젠테이션이 없습니다. ProPresenter에서 설교 프레젠테이션을 클릭해 주세요.');
+    const full = await pp('v1/presentation/' + id.uuid);
+    const groups = full?.presentation?.groups || full?.groups || [];
+    const slides = [];
+    for (const g of groups) for (const s of g.slides || []) slides.push({ text: (s.text || '').trim(), label: s.label || '', group: g.name || '' });
+    S.pres = { uuid: id.uuid, name: full?.presentation?.id?.name || id.name || '', slides, loaded: Date.now() };
+    save(); renderSlides();
+  } catch (e) { msg('presMsg', e.message, 'err'); }
+}
+function renderSlides() {
+  if (!S.pres) return;
+  msg('presMsg', `「${S.pres.name}」 · 슬라이드 ${S.pres.slides.length}장`, 'ok');
+  $('slideList').innerHTML = S.pres.slides.map((s, i) =>
+    `<div class="sl"><img loading="lazy" src="${thumbUrl(i)}" onerror="this.style.visibility='hidden'"><b>${i + 1}</b>${esc((s.text || s.label || s.group).slice(0, 40))}</div>`).join('');
+}
+
+/* ---------- 3. 배경 ---------- */
+const mediaThumb = u => `/pp/v1/media/${u}/thumbnail?quality=400`;
+async function loadMediaLists() {
+  msg('mediaMsg', '가져오는 중…');
+  try {
+    const r = await pp('v1/media/playlists'), flat = [];
+    const walk = a => { for (const p of a || []) { if (p.children?.length) walk(p.children); else if (p.id?.uuid) flat.push(p.id); } };
+    walk(Array.isArray(r) ? r : r?.playlists || r?.children);
+    if (!flat.length) throw new Error('미디어 재생목록이 없습니다. 미디어 빈에 재생목록을 만들고 배경을 넣어 주세요.');
+    $('mediaLists').innerHTML = flat.map(p => `<button class="btn" onclick="loadMedia('${esc(p.uuid)}')">${esc(p.name || '이름 없음')}</button>`).join('');
+    msg('mediaMsg', '배경이 들어 있는 재생목록을 고르세요.');
+  } catch (e) { msg('mediaMsg', e.message, 'err'); }
+}
+async function loadMedia(pid) {
+  msg('mediaMsg', '가져오는 중…');
+  try {
+    const r = await pp('v1/media/playlist/' + pid);
+    const items = (r?.items || []).filter(i => i?.id?.uuid).map(i => ({ uuid: i.id.uuid, name: i.id.name || '' }));
+    S.media = { pid, name: r?.id?.name || '', items };
+    save(); renderMedia();
+  } catch (e) { msg('mediaMsg', e.message, 'err'); }
+}
+function renderMedia() {
+  if (!S.media) return;
+  msg('mediaMsg', `「${S.media.name}」 · 배경 ${S.media.items.length}개`, 'ok');
+  $('mediaList').innerHTML = S.media.items.map((m, i) =>
+    `<div class="sl"><img loading="lazy" src="${mediaThumb(m.uuid)}" onerror="this.style.visibility='hidden'"><b>배경 ${i + 1}${i ? '' : ' · 기본'}</b>${esc(m.name.slice(0, 40))}</div>`).join('');
+}
+async function trigMedia(uuid) {
+  try { await pp(`v1/media/playlist/${S.media.pid}/${uuid}/trigger`); }
+  catch { await pp(`v1/trigger/media/${S.media.pid}/${uuid}`); }
+}
+/* ---------- 5. 자막 틀 (ProPresenter 메시지) ---------- */
+const HI = { '기본': '#3f7d5c', '노랑': '#f2c230', '초록': '#3fbf6a', '하늘': '#35c3d6', '파랑': '#4a86f7', '보라': '#9b6cf0', '분홍': '#ef6aa9', '빨강': '#ee5a4f', '주황': '#f59a36' };
+const subLines = t => t.split(/⏎|\s\/\s/).map(x => x.trim()).filter(Boolean);
+function parseSub(raw) {                       // "{{파랑: 주소 / 본문}}" 안쪽 → { style, lines }
+  const m = /^([^\s:：]{1,6})\s*[:：]\s*([\s\S]+)$/.exec(raw.trim());
+  return m && HI[m[1]] ? { style: m[1], lines: subLines(m[2]) } : { style: '기본', lines: subLines(raw) };
+}
+function usedStyles() {
+  const used = new Set(['기본']); let m; const re = /\{\{([\s\S]*?)\}\}/g;
+  while ((m = re.exec($('text').value))) used.add(parseSub(m[1]).style);
+  return used;
+}
+// 메시지 이름에 색 이름이 들어 있으면 그 색에 자동 연결 ("기본"은 "자막"이 들어간 메시지 중 색 이름이 없는 것)
+function autoMatch() {
+  let n = 0; const colors = Object.keys(HI).filter(k => k !== '기본');
+  for (const k of Object.keys(HI)) {
+    if (S.subs[k]) continue;
+    const hit = k === '기본'
+      ? S.msgs.find(x => /자막|기본/.test(x.name) && !colors.some(c => x.name.includes(c)) && x.tokens.length)
+      : S.msgs.find(x => x.name.includes(k) && x.tokens.length);
+    if (hit) { S.subs[k] = { uuid: hit.uuid, swap: false }; n++; }
+  }
+  return n;
+}
+async function loadMsgs(verbose) {
+  if (verbose) msg('subMsg', '가져오는 중…');
+  try {
+    const r = await pp('v1/messages');
+    S.msgs = (Array.isArray(r) ? r : r?.messages || []).filter(m => m?.id?.uuid).map(m => ({ uuid: m.id.uuid, name: m.id.name || '', tokens: (m.tokens || []).filter(t => t.text !== undefined).map(t => t.name) }));
+    for (const k of Object.keys(S.subs)) if (!S.msgs.some(x => x.uuid === S.subs[k].uuid)) delete S.subs[k];   // 지워진 메시지 연결 정리
+    if (!S.msgs.length) throw new Error('메시지가 없습니다. ProPresenter의 메시지 창에서 자막 틀을 먼저 만들어 주세요. (docs/ProPresenter-준비.md)');
+    const n = autoMatch();
+    save(); msg('subMsg', `메시지 ${S.msgs.length}개를 가져왔습니다.` + (n ? ` 이름으로 ${n}개 색을 자동 연결했습니다.` : '') + ' 아래에서 색마다 틀을 확인하세요.', 'ok'); renderSubs();
+  } catch (e) { if (verbose) msg('subMsg', e.message, 'err'); }
+}
+function renderSubs() {
+  if ($('keepSlide')) $('keepSlide').checked = S.subKeepSlide === true;
+  const used = usedStyles();
+  for (const k of Object.keys(S.subs)) used.add(k);
+  $('subRows').innerHTML = !S.msgs.length ? '' : Object.keys(HI).filter(k => used.has(k)).map(k => {
+    const cur = S.subs[k], mm = cur && S.msgs.find(x => x.uuid === cur.uuid), tk = mm?.tokens || [];
+    const a = cur?.swap ? tk[1] : tk[0], b = cur?.swap ? tk[0] : tk[1];
+    const info = !mm ? '' : !tk.length ? '<span style="color:var(--red)">이 메시지에는 텍스트 토큰이 없습니다</span>'
+      : tk.length === 1 ? `전체 → <b>${esc(tk[0])}</b>` : `첫 줄 → <b>${esc(a)}</b> · 나머지 → <b>${esc(b)}</b> <button class="btn" style="padding:4px 10px;font-size:13px" onclick="swapSub('${k}')">서로 바꾸기</button>`;
+    return `<div class="subRow"><span class="sw" style="background:${HI[k]}"></span><b style="width:74px">${k === '기본' ? '기본 {{ }}' : k}</b>
+      <select onchange="setSub('${k}', this.value)"><option value="">틀 없음</option>${S.msgs.map(x => `<option value="${esc(x.uuid)}"${cur?.uuid === x.uuid ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+      <span style="color:var(--sub)">${info}</span>
+      ${cur ? `<details style="flex-basis:100%;padding-left:102px;color:var(--sub)"${cur.ref || cur.also ? ' open' : ''}><summary style="cursor:pointer">고급 설정</summary>
+      <div style="margin-top:6px">첫 줄만 다른 틀로 <select onchange="setRef('${k}', this.value)"><option value="">사용 안 함</option>${S.msgs.map(x => `<option value="${esc(x.uuid)}"${cur.ref === x.uuid ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select> ${cur.ref ? '— 첫 줄(성경 주소)은 이 틀로, 나머지는 위 틀로 함께 띄웁니다' : ''}</div>
+      <div style="margin-top:6px">같은 글자를 함께 띄울 틀 <select onchange="setAlso('${k}', this.value)"><option value="">사용 안 함</option>${S.msgs.map(x => `<option value="${esc(x.uuid)}"${cur.also === x.uuid ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select> ${cur.also ? '— 좌우를 따로 만든 틀일 때: 위 틀과 이 틀에 같은 글자를 동시에 띄웁니다' : ''}</div></details>` : ''}</div>`;
+  }).join('');
+}
+function setSub(k, uuid) { if (uuid) S.subs[k] = { uuid, swap: false }; else delete S.subs[k]; save(); renderSubs(); }
+function setRef(k, uuid) { if (uuid) S.subs[k].ref = uuid; else delete S.subs[k].ref; save(); renderSubs(); }
+function setAlso(k, uuid) { if (uuid) S.subs[k].also = uuid; else delete S.subs[k].also; save(); renderSubs(); }
+function swapSub(k) { S.subs[k].swap = !S.subs[k].swap; save(); renderSubs(); }
+const trigMsg = (m, val) => pp(`v1/message/${m.uuid}/trigger`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(m.tokens.map(name => ({ name, text: { text: val[name] || '' } }))) });
+async function showSub(c) {
+  const map = S.subs[c.style], m = map && S.msgs.find(x => x.uuid === map.uuid);
+  if (!m) throw new Error(`"${c.style}" 자막 틀이 정해지지 않았습니다 (준비 화면 5번)`);
+  if (!m.tokens.length) throw new Error('자막 틀에 텍스트 토큰이 없습니다');
+  const ref = map.ref && c.lines.length >= 2 ? S.msgs.find(x => x.uuid === map.ref && x.tokens.length) : null;
+  const lines = ref ? c.lines.slice(1) : c.lines, val = {};
+  if (m.tokens.length >= 2 && !ref) {
+    const [first, rest] = map.swap ? [m.tokens[1], m.tokens[0]] : [m.tokens[0], m.tokens[1]];
+    if (lines.length >= 2) { val[first] = lines[0]; val[rest] = lines.slice(1).join('\n'); }
+    else val[rest] = lines.join('\n');
+  } else val[m.tokens[0]] = lines.join('\n');
+  const also = map.also && map.also !== m.uuid ? S.msgs.find(x => x.uuid === map.also && x.tokens.length) : null;
+  const want = [m.uuid, ...(ref ? [ref.uuid] : []), ...(also ? [also.uuid] : [])];
+  if (S.subKeepSlide !== true) await pp('v1/clear/layer/slide').catch(() => {});   // 자막과 슬라이드가 같은 자리에 겹치지 않게
+  for (const id of liveMsgs.filter(x => !want.includes(x))) await pp(`v1/message/${id}/clear`).catch(() => {});
+  if (ref) await trigMsg(ref, { [ref.tokens[0]]: c.lines[0] });   // 첫 줄(성경 주소)은 전용 틀로
+  await Promise.all([trigMsg(m, val), also ? trigMsg(also, { [also.tokens[0]]: lines.join('\n') }) : null]);   // 좌우 따로 만든 틀은 동시에
+  liveMsgs = want;
+}
+async function hideSub() {
+  const ids = liveMsgs; liveMsgs = [];
+  try { if (!ids.length) throw 0; for (const id of ids) await pp(`v1/message/${id}/clear`); } catch { await pp('v1/clear/layer/messages'); }
+}
+
+function cueInfo(c) {
+  if (c.sub) return { label: '❝ ' + c.lines.join(' ').slice(0, 14), short: '자막', ok: !!S.subs[c.style] };
+  if (c.subClear) return { label: '✕ 자막 내림', short: '자막 내림', ok: true };
+  if (c.clear) return { label: '✕ 슬라이드 지우기', short: '슬라이드 지우기', ok: true };
+  if (c.bgClear) return { label: '✕ 배경 지우기', short: '배경 지우기', ok: true };
+  if (c.bg !== undefined) { const it = S.media?.items[c.bg]; return { label: `▣ 배경 ${it ? c.bg + 1 : '?'}`, tail: it?.name, short: `배경 ${it ? c.bg + 1 : '?'}`, ok: !!it }; }
+  const s = S.pres?.slides[c.slide - 1];
+  return { label: `▶ ${c.slide}`, tail: s?.text || s?.label, short: String(c.slide), ok: !S.pres || !!s };
+}
+
+/* ---------- 4. 원고 ---------- */
+async function loadDoc(tab) {
+  msg('docMsg', '가져오는 중…');
+  try {
+    const r = await fetch('/api/doc?url=' + encodeURIComponent($('docUrl').value) + (tab ? '&tab=' + encodeURIComponent(tab) : ''));
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    let t = j.text.replace(/\r/g, '');
+    if (j.md) t = t.replace(/\\([\[\]{}>\-_*#.!()~+])/g, '$1');
+    $('text').value = t;
+    renderSubs();
+    docTabList = j.tabList || []; docTabId = j.tabId || '';
+    $('docTabs').classList.toggle('hidden', docTabList.length < 2);
+    $('docTabPick').classList.add('hidden'); $('tabFilter').value = '';
+    $('docTabName').textContent = j.tab || '제목 없는 탭'; $('docTabCount').textContent = `(${docTabList.length}개 중)`;
+    if (j.via === 'account') msg('docMsg', `「${j.title}」` + (j.tabs > 1 ? ` · "${j.tab}" 탭을 가져왔습니다.` : '을 가져왔습니다.'), 'ok');
+    else if (j.firstTab) msg('docMsg', (j.chosen ? '원고를 가져왔습니다. (주소에 지정된 탭)' : '원고를 가져왔습니다. (첫 번째 탭)') + ' 링크 공유 방식에서는 형광펜이 자막으로 바뀌지 않으니 {{ }} 기호를 쓰세요.', 'ok');
+    else msg('docMsg', '원고를 가져왔습니다. 탭이 여러 개인 문서라면 전체가 들어왔을 수 있으니 확인해 주세요.', 'ok');
+  } catch (e) { msg('docMsg', e.message, 'err'); }
+}
+let docTabList = [], docTabId = '';
+function toggleTabPick() {
+  $('docTabPick').classList.toggle('hidden');
+  if (!$('docTabPick').classList.contains('hidden')) { renderTabs(); $('tabItems').querySelector('.cur')?.scrollIntoView({ block: 'nearest' }); }
+}
+function renderTabs() {
+  const f = $('tabFilter').value.replace(/\s/g, '').toLowerCase();
+  const list = docTabList.filter(t => !f || t.title.replace(/\s/g, '').toLowerCase().includes(f));
+  $('tabItems').innerHTML = list.length ? list.map(t =>
+    `<button class="${t.id === docTabId ? 'cur' : ''}" data-tab="${esc(t.id)}" onclick="loadDoc(this.dataset.tab)" style="padding-left:${16 + (f ? 0 : t.depth * 22)}px"><span>${t.depth && !f ? '└ ' : ''}${esc(t.title || '제목 없는 탭')}</span>${t.id === docTabId ? '<small>지금</small>' : ''}</button>`).join('')
+    : '<div class="none">맞는 탭이 없습니다.</div>';
+}
+let docT, docFiles = [];
+async function openDocPick() { $('docPick').classList.toggle('hidden'); if (!$('docPick').classList.contains('hidden')) loadDocList(); }
+async function loadDocList() {
+  $('docItems').innerHTML = '<div class="none">가져오는 중…</div>';
+  try {
+    const r = await fetch('/api/google/docs?q=' + encodeURIComponent($('docFilter').value.trim()));
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    docFiles = j.files;
+    $('docItems').innerHTML = docFiles.length ? docFiles.map((f, i) =>
+      `<button onclick="chooseDoc(${i})"><span>${esc(f.name)}</span><small>${f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : ''}</small></button>`).join('')
+      : '<div class="none">문서가 없습니다.</div>';
+  } catch (e) { $('docItems').innerHTML = `<div class="none" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+function chooseDoc(i) {
+  $('docUrl').value = 'https://docs.google.com/document/d/' + docFiles[i].id + '/edit';
+  $('docPick').classList.add('hidden'); loadDoc();
+}
+/* 구글 문서: 기본은 링크 공유, 계정 연결은 선택 */
+const LINK_INFO = `<b>구글 문서 가져오기</b> — 문서의 <b>공유</b> → 일반 액세스를 <b>"링크가 있는 모든 사용자 - 뷰어"</b>로 바꾸고 주소를 붙여 넣으면 됩니다. 탭이 여러 개면 첫 번째 탭(또는 주소에 지정된 탭)을 가져옵니다.<br>
+  <span style="color:var(--sub)">이 방식에서는 형광펜이 자막으로 바뀌지 않으니, 자막은 <code>{{ }}</code> 기호로 표시하세요.</span>`;
+const ACCOUNT_WHY = '비공개 문서 · 형광펜 → 자막 · 내 문서 목록 · 탭 고르기';
+async function gStatus() {
+  let g; try { g = await (await fetch('/api/google/status')).json(); } catch { return; }
+  const box = $('gBox');
+  $('docPickBtn').classList.toggle('hidden', !g.connected);
+  if (g.connected) box.innerHTML = `<b style="color:var(--green)">구글 계정 연결됨</b> · ${esc(g.email || '')} — 비공개 문서도 가져오고 형광펜을 자막으로 바꿉니다. ${g.canList ? '"내 문서에서 선택"으로 문서를 고를 수 있습니다.' : '문서 목록을 보려면 맥에서 연결을 해제한 뒤 다시 연결해 주세요. (목록 권한 추가)'}` +
+    (g.local ? ` <button class="btn" style="padding:6px 14px;margin-left:8px" onclick="gDisconnect()">연결 해제</button>` : '');
+  else if (!g.local) box.innerHTML = LINK_INFO + `<details><summary>구글 계정 연결 (선택) — ${ACCOUNT_WHY}</summary>
+    계정 연결은 서버가 켜진 맥에서만 할 수 있습니다. 그 맥의 브라우저에서 <code>http://localhost:${location.port || 80}</code>을 열어 주세요.</details>`;
+  else box.innerHTML = LINK_INFO + `<details${g.configured ? ' open' : ''}><summary>구글 계정 연결 (선택) — ${ACCOUNT_WHY}</summary>` + (g.configured
+    ? `연결하면 공유 설정 없이 내 문서를 가져옵니다. (읽기 전용 권한만 요청)<br><button class="btn primary" style="margin-top:10px" onclick="location.href='/oauth/start'">구글 계정 연결</button>
+       <button class="btn" style="margin-top:10px" onclick="gReset()">클라이언트 다시 입력</button>`
+    : `<ol><li>Google Cloud에서 내 프로젝트를 만들고 <b>Google Docs API</b>·<b>Google Drive API</b>를 켭니다.</li>
+         <li>OAuth 동의 화면을 "외부"로 만들고, 내 구글 계정을 테스트 사용자로 넣습니다.</li>
+         <li>사용자 인증 정보 → OAuth 클라이언트 ID → 유형 <b>데스크톱 앱</b>으로 만듭니다.</li>
+         <li>나온 클라이언트 ID와 보안 비밀번호를 아래에 붙여 넣고 저장합니다.</li></ol>
+       자세한 순서(그림 포함)는 프로그램 폴더의 <b>docs/구글-계정-연결.md</b>에 있습니다.
+       <div class="row" style="margin-top:10px"><input id="gId" placeholder="클라이언트 ID" style="flex:2;min-width:220px"><input id="gSecret" placeholder="클라이언트 보안 비밀번호" style="flex:1;min-width:160px"><button class="btn" onclick="gSave()">저장</button></div>`) + '</details>';
+}
+async function gSave() {
+  await fetch('/api/google/credentials', { method: 'POST', body: JSON.stringify({ client_id: $('gId').value, client_secret: $('gSecret').value }) });
+  gStatus();
+}
+async function gReset() {
+  await fetch('/api/google/credentials', { method: 'POST', body: JSON.stringify({ client_id: '', client_secret: '' }) });
+  gStatus();
+}
+async function gDisconnect() { await fetch('/api/google/disconnect', { method: 'POST' }); gStatus(); }
+async function baseBg() {
+  const it = S.media?.items[0]; if (!it) return toast('배경을 먼저 불러와 주세요');
+  try { await trigMedia(it.uuid); $('dot').className = 'ok'; }
+  catch (e) { $('dot').className = 'err'; toast('기본 배경 전환 실패: ' + e.message); }
+}
+function parse(text) {
+  cues = []; let last = 0, html = '';
+  const cueRe = /\[\[\s*([^\]]*?)\s*\]\]|\{\{([\s\S]*?)\}\}/g;
+  for (let line of text.split('\n')) {
+    line = line.trim(); if (!line) continue;
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    const bare = line.replace(cueRe, '').replace(/\*\*/g, '').trim();
+    const isHead = h || (bare.length <= 30 && /^(서론|본론|결론|맺는 ?말|들어가는 ?말|[ⅠⅡⅢⅣⅤⅥ]+[.\s]|\d+\.\s)/.test(bare));
+    let body = (h ? h[2] : line), out = '', pos = 0, m;
+    cueRe.lastIndex = 0;
+    while ((m = cueRe.exec(body))) {
+      out += fmt(body.slice(pos, m.index)); pos = m.index + m[0].length;
+      if (m[2] !== undefined) {                 // {{자막}} → 문구 자체가 버튼, 뒤에 "자막 내림" 단계가 자동으로 붙음
+        const sb = parseSub(m[2]); if (!sb.lines.length) continue;
+        const cue = { n: cues.length, sub: true, ...sb }; cues.push(cue);
+        const two = sb.lines.length >= 2 && (S.subs[sb.style]?.ref || (S.msgs.find(x => x.uuid === S.subs[sb.style]?.uuid)?.tokens.length || 0) >= 2);
+        const inner = two ? `<span class="ref">${esc(sb.lines[0])}</span>${sb.lines.slice(1).map(esc).join('<br>')}` : sb.lines.map(esc).join('<br>');
+        const bad = S.subs[sb.style] ? '' : 'border-color:var(--red);';
+        out += `<button class="cue sub" id="cue${cue.n}" style="--hc:${HI[sb.style]};${bad}" onclick="fire(${cue.n})">${inner}</button>`;
+        const off = { n: cues.length, subClear: true }; cues.push(off);
+        out += `<button class="cue clear mini" id="cue${off.n}" onclick="fire(${off.n})">✕ 자막 내림</button>`;
+        continue;
+      }
+      const c = /^(자막\s*지움|배경\s*지움|배경|\d+|>|다음|지움|clear)?\s*(.*)$/i.exec(m[1]);
+      const key = (c[1] || '').toLowerCase().replace(/\s/g, ''); let note = c[2];
+      const cue = { n: cues.length };
+      if (key === '지움' || key === 'clear') cue.clear = true;
+      else if (key === '배경지움') cue.bgClear = true;
+      else if (key === '자막지움') cue.subClear = true;
+      else if (key === '배경') {
+        const nm = /^(\d+)\s*(.*)$/.exec(note), squash = t => t.replace(/\s/g, '').toLowerCase();
+        if (nm) { cue.bg = parseInt(nm[1], 10) - 1; note = nm[2]; }
+        else cue.bg = note ? (S.media?.items || []).findIndex(x => squash(x.name).includes(squash(note))) : -1;
+      }
+      else if (/^\d+$/.test(key)) last = cue.slide = parseInt(key, 10);
+      else cue.slide = ++last;
+      cues.push(cue);
+      const info = cueInfo(cue), tail = (note || info.tail || '').replace(/\s+/g, ' ').slice(0, 24);
+      const cls = cue.clear || cue.bgClear || cue.subClear ? ' clear' : cue.bg !== undefined ? ' bg' : '';
+      const bad = info.ok ? '' : ' style="border-color:var(--red);color:var(--red)"';
+      out += `<button class="cue${cls}" id="cue${cue.n}"${bad} onclick="fire(${cue.n})">${esc(info.label + (tail ? ' · ' + tail : ''))}</button>`;
+    }
+    out += fmt(body.slice(pos));
+    html += isHead ? `<h2>${out}</h2>` : `<p>${out}</p>`;
+  }
+  return html;
+}
+const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+
+/* ---------- 설교 화면 ---------- */
+function startPreach() {
+  S.text = $('text').value; S.docUrl = $('docUrl').value; save();
+  $('script').innerHTML = parse(S.text) || '<p style="color:var(--sub)">원고가 비어 있습니다.</p>';
+  $('title').textContent = S.pres ? S.pres.name : '슬라이드 미연결';
+  $('baseBg').classList.toggle('hidden', !S.media?.items?.length);
+  cur = -1; mark();
+  $('setup').classList.add('hidden'); $('preach').classList.remove('hidden');
+  $('script').scrollTop = 0; checkConn();
+}
+function showSetup() { $('preach').classList.add('hidden'); $('setup').classList.remove('hidden'); }
+
+async function fire(n) {
+  const c = cues[n]; if (!c) return;
+  cur = n; mark();                         // 화면 표시는 즉시, 통신은 뒤따라
+  if (!tRun && !tAcc) toggleTimer();
+  try {
+    if (c.sub) await showSub(c);
+    else if (c.subClear) await hideSub();
+    else if (c.clear) await pp('v1/clear/layer/slide');
+    else if (c.bgClear) await pp('v1/clear/layer/media');
+    else if (c.bg !== undefined) {
+      const it = S.media?.items[c.bg]; if (!it) throw new Error('배경을 찾을 수 없습니다 (준비 화면 3번)');
+      await trigMedia(it.uuid);
+    } else {
+      if (!S.pres) throw new Error('슬라이드가 연결되지 않았습니다 (준비 화면 2번)');
+      if (S.subKeepSlide !== true && liveMsgs.length) await hideSub().catch(() => {});   // 슬라이드를 띄울 때 떠 있던 자막은 내림
+      await pp(`v1/presentation/${S.pres.uuid}/${c.slide - 1}/trigger`);
+    }
+    $('dot').className = 'ok';
+  } catch (e) { $('dot').className = 'err'; toast('전환 실패: ' + e.message); }
+}
+function go(d) {
+  if (!cues.length) return toast('원고에 [[ ]] 나 {{ }} 표시가 없습니다');
+  const n = cur + d; if (n < 0 || n >= cues.length) return;
+  fire(n);
+  const el = $('cue' + n), box = $('script'), r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+  if (r.top < b.top + 20 || r.bottom > b.bottom - 20) box.scrollTo({ top: box.scrollTop + r.top - b.top - b.height * 0.3, behavior: 'smooth' });
+}
+async function doClear() {
+  try { await hideSub().catch(() => {}); await pp('v1/clear/layer/slide'); setThumb('thNow', 'capNow', null, '자막·슬라이드 지움'); }
+  catch (e) { toast('지우기 실패: ' + e.message); }
+}
+function mark() {
+  document.querySelectorAll('.cue').forEach((e, i) => { e.classList.toggle('live', i === cur); e.classList.toggle('done', i < cur); });
+  document.querySelectorAll('#script p.now').forEach(e => e.classList.remove('now'));
+  if (cur >= 0) $('cue' + cur)?.closest('p')?.classList.add('now');
+  setThumb('thNow', 'capNow', cues[cur], cur < 0 ? '아직 시작 전' : '');
+  setThumb('thNext', 'capNext', cues[cur + 1], cues[cur + 1] ? '' : '마지막입니다');
+  $('next').textContent = cues[cur + 1] ? '다음 ▶ ' + cueInfo(cues[cur + 1]).short : '끝';
+}
+function setThumb(th, cap, c, empty) {
+  let src = '', text = '';
+  if (c?.sub) { $(th).innerHTML = `<div style="padding:10px;color:#fff;font-size:12px;line-height:1.5;text-align:left;max-height:100%;overflow:hidden">${c.lines.map(esc).join('<br>')}</div>`; $(cap).textContent = '자막 · ' + c.style; return; }
+  if (c?.subClear) { $(th).innerHTML = '자막 내림'; $(cap).textContent = ''; return; }
+  if (c && c.bg !== undefined) { const it = S.media?.items[c.bg]; if (it) { src = mediaThumb(it.uuid); text = `배경 ${c.bg + 1}. ${it.name}`; } }
+  else if (c && !c.clear && !c.bgClear && S.pres) { const s = S.pres.slides[c.slide - 1]; if (s) { src = thumbUrl(c.slide - 1); text = `${c.slide}. ${s.text || s.label || s.group}`; } }
+  $(th).innerHTML = src ? `<img src="${src}" onerror="this.remove()">` : (c?.clear ? '슬라이드 지움' : c?.bgClear ? '배경 지움' : empty || '—');
+  $(cap).textContent = text;
+}
+
+/* ---------- 타이머 · 보기 설정 ---------- */
+function toggleTimer() { if (tRun) tAcc += Date.now() - tStart; else tStart = Date.now(); tRun = !tRun; tick(); }
+function resetTimer() { tRun = false; tAcc = 0; tick(); }
+function tick() {
+  const ms = tAcc + (tRun ? Date.now() - tStart : 0), s = Math.floor(ms / 1000);
+  $('timer').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  $('timer').style.color = tRun ? 'var(--green)' : '';
+  $('clock').textContent = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+setInterval(tick, 1000);
+setInterval(() => { if (!$('preach').classList.contains('hidden')) checkConn(); }, 10000);
+function font(d) { S.fs = Math.max(16, Math.min(48, S.fs + d)); applyView(); save(); }
+function toggleDark() { S.dark = !document.documentElement.classList.contains('dark'); applyView(); save(); }
+function applyView() {
+  document.documentElement.style.setProperty('--fs', S.fs + 'px');
+  const dark = S.dark ?? matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.classList.toggle('dark', dark);
+}
+
+/* ---------- 이 맥: 접속 안내 · 끄기 ---------- */
+async function showInfo() {
+  try {
+    const i = await (await fetch('/api/info')).json();
+    $('infoCard').classList.remove('hidden');
+    $('infoAddr').innerHTML = i.addresses.length ? i.addresses.map(esc).join('<br>') : '<span style="color:var(--red)">네트워크에 연결되어 있지 않습니다</span>';
+    $('infoPw').innerHTML = i.firstCode ? `접속 비밀번호: <b style="font-size:20px;color:var(--text)">${esc(i.firstCode)}</b> — 처음 만들어진 비밀번호입니다. 맨 아래에서 바꿀 수 있습니다.`
+      : '접속 비밀번호는 이미 정해져 있습니다. 잊었다면 맨 아래 "접속 비밀번호"에서 새로 정하세요.';
+    $('infoQuit').textContent = i.app ? '다시 켜려면 응용 프로그램의 "설교 리모컨"을 누르세요.' : '터미널 창을 닫아도 꺼집니다.';
+  } catch {}
+}
+async function shutdown() {
+  if (!confirm('설교 리모컨을 끌까요? 아이패드 연결도 끊어집니다.')) return;
+  try { await fetch('/api/shutdown', { method: 'POST' }); } catch {}
+  document.body.innerHTML = '<div style="text-align:center;padding:30vh 24px;font-size:20px;color:var(--sub)">설교 리모컨을 껐습니다. 이 창은 닫아도 됩니다.</div>';
+}
+
+/* ---------- 시작 ---------- */
+(async () => {
+  let a = { authed: false }; try { a = await (await rawFetch('/api/auth/status')).json(); } catch {}
+  applyView();
+  if (a.version) $('ver').textContent = 'v' + a.version;
+  if (!a.authed) return showLogin();
+  $('setup').classList.remove('hidden'); $('pwCard').classList.toggle('hidden', !a.local);
+  if (a.local) showInfo();
+  try { Object.assign(S, await (await fetch('/api/state')).json()); } catch {}
+  const c = await (await fetch('/api/config')).json();
+  $('host').value = c.host; $('port').value = c.port;
+  $('text').value = S.text || ''; $('docUrl').value = S.docUrl || '';
+  applyView(); tick(); renderSlides(); renderMedia(); renderSubs(); gStatus();
+  if (await checkConn(true)) loadMsgs(false);   // 연결되면 메시지 목록을 조용히 새로 고침 (자막 틀 자동 연결)
+})();
+</script>
+</body>
+</html>

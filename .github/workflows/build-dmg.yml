@@ -1,0 +1,26 @@
+# 맥용 dmg 자동 만들기
+# - "v1.0.0"처럼 v로 시작하는 태그를 올리면 dmg를 만들어 릴리스(다운로드 페이지)에 붙입니다.
+# - Actions 탭 → Build dmg → Run workflow로 직접 돌리면 결과 파일을 Artifacts에서 받을 수 있습니다.
+name: Build dmg
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: bash scripts/build-dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: dist/*.dmg
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg

@@ -3,7 +3,7 @@
 // Copyright 2026 조성훈 (JO SUNGHUN). PolyForm Noncommercial License 1.0.0 — LICENSE 참고.
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto'), { execFile } = require('child_process');
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8080;
 const DIR = __dirname;
 // 설정·비밀번호·원고를 저장하는 폴더. 맥 앱(dmg)으로 켜면 ~/Library/Application Support/설교 리모컨,

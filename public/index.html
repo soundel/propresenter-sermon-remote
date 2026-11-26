@@ -592,10 +592,10 @@ async function gReset() {
   gStatus();
 }
 async function gDisconnect() { await fetch('/api/google/disconnect', { method: 'POST' }); gStatus(); }
-async function baseBg() {
+function baseBg() {
   const it = S.media?.items[0]; if (!it) return toast('배경을 먼저 불러와 주세요');
-  try { await trigMedia(it.uuid); $('dot').className = 'ok'; }
-  catch (e) { $('dot').className = 'err'; toast('기본 배경 전환 실패: ' + e.message); }
+  return queued(async () => { try { await trigMedia(it.uuid); $('dot').className = 'ok'; }
+  catch (e) { $('dot').className = 'err'; toast('기본 배경 전환 실패: ' + e.message); } });
 }
 function parse(text) {
   cues = []; let last = 0, html = '';
@@ -658,10 +658,17 @@ function startPreach() {
 }
 function showSetup() { $('preach').classList.add('hidden'); $('setup').classList.remove('hidden'); }
 
-async function fire(n) {
+// ProPresenter 명령은 한 줄로 차례대로 보냅니다. 버튼을 빠르게 연달아 눌러도
+// 앞 명령(자막 띄우기)이 끝나기 전에 뒤 명령(자막 내림)이 먼저 실행되어 자막이 남는 일이 없게 합니다.
+let ppQueue = Promise.resolve();
+const queued = job => (ppQueue = ppQueue.then(job, job));
+function fire(n) {
   const c = cues[n]; if (!c) return;
-  cur = n; mark();                         // 화면 표시는 즉시, 통신은 뒤따라
+  cur = n; mark();                         // 화면 표시는 즉시, 통신은 차례대로 뒤따라
   if (!tRun && !tAcc) toggleTimer();
+  return queued(() => runCue(c));
+}
+async function runCue(c) {
   try {
     if (c.sub) await showSub(c);
     else if (c.subClear) await hideSub();
@@ -685,9 +692,10 @@ function go(d) {
   const el = $('cue' + n), box = $('script'), r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
   if (r.top < b.top + 20 || r.bottom > b.bottom - 20) box.scrollTo({ top: box.scrollTop + r.top - b.top - b.height * 0.3, behavior: 'smooth' });
 }
-async function doClear() {
-  try { await hideSub().catch(() => {}); await pp('v1/clear/layer/slide'); setThumb('thNow', 'capNow', null, '자막·슬라이드 지움'); }
-  catch (e) { toast('지우기 실패: ' + e.message); }
+function doClear() {
+  setThumb('thNow', 'capNow', null, '자막·슬라이드 지움');
+  return queued(async () => { try { await hideSub().catch(() => {}); await pp('v1/clear/layer/slide'); }
+    catch (e) { toast('지우기 실패: ' + e.message); } });
 }
 function mark() {
   document.querySelectorAll('.cue').forEach((e, i) => { e.classList.toggle('live', i === cur); e.classList.toggle('done', i < cur); });

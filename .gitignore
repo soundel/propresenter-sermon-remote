@@ -3,6 +3,7 @@ config.json
 state.json
 google.json
 auth.json
+overlay.json
 
 # 글꼴 파일은 각자 넣습니다 (Pretendard는 OFL이지만 저장소를 가볍게 유지)
 public/fonts/*.woff2
@@ -15,3 +16,4 @@ dist/
 
 # Claude Code 작업 메모 (개인용)
 CLAUDE.md
+overlay-media/

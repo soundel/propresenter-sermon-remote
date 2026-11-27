@@ -63,6 +63,31 @@ code { background:var(--green-soft); color:var(--green); padding:2px 7px; border
 #gBox details { margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
 #gBox summary { cursor:pointer; color:var(--green); font-weight:600; }
 #gBox ol { margin:8px 0; padding-left:20px; color:var(--sub); }
+/* 6. 유튜브 자막 (OBS) */
+.chk { display:flex; gap:10px; align-items:flex-start; font-size:15px; line-height:1.5; }
+.chk input { margin-top:4px; width:18px; height:18px; accent-color:var(--green); flex:none; }
+.lab2 { font-size:13px; color:var(--sub); font-weight:600; margin:18px 0 8px; }
+.ovGrid { display:grid; grid-template-columns:110px 1fr; gap:12px 14px; align-items:center; font-size:14px; margin-top:6px; }
+.ovGrid > span { color:var(--sub); font-weight:600; }
+.seg { display:inline-flex; justify-self:start; background:var(--bg); border-radius:999px; padding:3px; gap:2px; flex-wrap:wrap; }
+.seg button { padding:7px 14px; border-radius:999px; font-size:14px; color:var(--sub); font-weight:600; }
+.seg button.on { background:var(--card); color:var(--green); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.rng { display:flex; gap:12px; align-items:center; } .rng input { flex:1; accent-color:var(--green); padding:0; border:0; background:none; } .rng b { min-width:52px; font-variant-numeric:tabular-nums; }
+.dots { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.dots button { width:30px; height:30px; border-radius:50%; border:2px solid var(--line); }
+.dots button.on { outline:3px solid var(--green); outline-offset:2px; }
+.bgList { display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px; }
+.bgList .bt { position:relative; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#000; color:#aaa; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; border:2px solid transparent; }
+.bgList .bt.on { border-color:var(--green); box-shadow:0 0 0 2px var(--green); }
+.bgList .bt img, .bgList .bt video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.bgList .bt .nm { position:absolute; left:0; right:0; bottom:0; padding:3px 6px; background:linear-gradient(transparent,rgba(0,0,0,.75)); color:#fff; font-size:11px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bgList .bt .vd { position:absolute; left:6px; top:5px; font-size:11px; color:#fff; text-shadow:0 1px 3px #000; }
+.bgList .bt .x { position:absolute; right:4px; top:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.6); color:#fff; font-size:13px; line-height:22px; }
+.bgList .bt.add { background:var(--green-soft); color:var(--green); border:2px dashed var(--green); font-size:13px; }
+.dots button.txt { width:auto; border-radius:999px; padding:0 12px; font-size:13px; font-weight:600; background:var(--bg); }
+.ovPrev { position:relative; width:100%; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#111; margin-top:18px; }
+.ovPrev iframe { position:absolute; left:0; top:0; width:1920px; height:1080px; border:0; transform-origin:0 0; pointer-events:none; }
+#ovBody.off { opacity:.55; }
 #foot { text-align:center; color:var(--sub); font-size:13px; margin-top:36px; }
 
 /* 설교 화면 */
@@ -215,6 +240,43 @@ code { background:var(--green-soft); color:var(--green); padding:2px 7px; border
     <label style="display:flex;gap:8px;align-items:center;margin-top:12px;color:var(--sub);font-size:14px"><input type="checkbox" id="keepSlide" onchange="S.subKeepSlide = this.checked; save()"> 자막을 띄워도 슬라이드를 그대로 두기 (끄면 자막·슬라이드가 서로 겹치지 않게 자동으로 바꿔 띄웁니다)</label>
   </div>
 
+  <div class="card" id="ovCard">
+    <h2>6. 유튜브 자막 (OBS) <span class="opt">선택</span></h2>
+    <p class="hint">무대 스크린에는 지금처럼 5번의 자막 틀(ProPresenter 메시지)로 띄우고, <b>유튜브 방송에는 설교 리모컨이 따로 그린 자막</b>을 OBS에 겹칩니다. 그래서 유튜브 자막은 무대와 다른 위치·크기로 정할 수 있습니다.<br>
+      OBS에서 <b>소스 +</b> → <b>브라우저</b> → 아래 주소를 붙여 넣고, 너비 <b>1920</b> 높이 <b>1080</b>으로 맞춥니다. 자세한 순서: <b>docs/유튜브-자막-OBS.md</b></p>
+    <label class="chk"><input type="checkbox" id="ovOn" onchange="setOv('on', this.checked)"><span><b>유튜브 자막 켜기</b> — 자막을 띄우고 내릴 때 OBS 자막도 함께 바뀝니다. 5번에서 틀을 정하지 않은 색은 유튜브에만 뜹니다.</span></label>
+    <div id="ovBody">
+      <div class="lab2">OBS에 넣을 주소</div>
+      <div class="row"><input id="ovUrl" readonly style="flex:1; min-width:240px; font-size:14px" onclick="this.select()"><button class="btn" id="ovCopy" onclick="copyOv()">복사</button></div>
+      <div class="msg" id="ovUrlMsg"></div>
+      <div class="lab2">디자인 — 일반 자막과 성경 구절을 따로 정합니다</div>
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" id="ovKind" style="font-size:15px"></div>
+        <button class="btn" style="padding:8px 14px; font-size:14px" id="ovCopyOther" onclick="ovCopyOther()"></button>
+      </div>
+      <div class="hint" id="ovKindHint" style="margin:10px 0 4px"></div>
+      <div class="ovGrid">
+        <span>화면</span><div class="seg" id="ovMode"></div>
+        <span class="ovFull">배경</span><div class="ovFull"><div class="bgList" id="ovBgList"></div><div class="msg" id="ovBgMsg" style="margin-top:8px"></div>
+          <input type="file" id="ovFile" class="hidden" multiple accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm,.mov,.m4v" onchange="ovUpload(this.files); this.value=''"></div>
+        <span class="ovFull">배경 어둡게</span><div class="rng ovFull"><input type="range" id="ovDim" min="0" max="90" step="5" oninput="setOv('bgDim', +this.value)"><b id="ovDimV"></b></div>
+        <span class="ovLower">위치</span><div class="seg ovLower" id="ovPos"></div>
+        <span id="ovMarginLab">여백</span><div class="rng"><input type="range" id="ovMargin" min="0" max="300" step="5" oninput="setOv('margin', +this.value)"><b id="ovMarginV"></b></div>
+        <span>글자 크기</span><div class="rng"><input type="range" id="ovSize" min="32" max="120" step="2" oninput="setOv('size', +this.value)"><b id="ovSizeV"></b></div>
+        <span>정렬</span><div class="seg" id="ovAlign"></div>
+        <span>배경 띠</span><div class="seg" id="ovBand"></div>
+        <span class="ovBandRow">띠 진하기</span><div class="rng ovBandRow"><input type="range" id="ovBandA" min="5" max="100" step="5" oninput="setOv('bandAlpha', +this.value)"><b id="ovBandAV"></b></div>
+        <span id="ovRefLab">성경 주소 색</span><div class="dots" id="ovRef"></div>
+      </div>
+      <div class="ovPrev" id="ovPrev"><iframe id="ovFrame" title="유튜브 자막 미리보기" tabindex="-1"></iframe></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" onclick="ovTest(true)">유튜브에만 시험 자막 띄우기 (지금 고르는 쪽)</button>
+        <button class="btn" onclick="ovTest(false)">시험 자막 내리기</button>
+      </div>
+      <div class="msg" id="ovMsg">미리보기는 예시 글자입니다. 시험 자막은 무대 스크린(ProPresenter)에는 나가지 않고 OBS에만 뜹니다.</div>
+    </div>
+  </div>
+
   <div class="row" style="justify-content:center; margin-top:28px">
     <button class="btn primary big" onclick="startPreach()">설교 화면 열기</button>
   </div>
@@ -283,7 +345,15 @@ async function changePw() {
   if (r.ok) { $('newPw').value = ''; msg('pwMsg', '비밀번호를 바꿨습니다. 다른 기기는 새 비밀번호로 다시 로그인해야 합니다.', 'ok'); }
   else msg('pwMsg', j.error, 'err');
 }
-const S = { docUrl:'', text:'', pres:null, media:null, msgs:[], subs:{}, fs:26, dark:null };   // 서버에 저장되는 상태
+// 유튜브 자막 디자인: 일반 자막(text)과 성경 구절(verse)을 따로
+// mode: lower 하단 자막 / full 풀스크린(배경 그림·영상 위에 글자). bandAlpha 띠 진하기 %, bgDim 배경 어둡게 %
+const OV_TEXT = { mode:'lower', pos:'bottom', margin:80, size:56, align:'center', band:'none', bandAlpha:55, refColor:'#ffd76a', bg:'', bgDim:30 };
+const OV_VERSE = { mode:'lower', pos:'bottom', margin:80, size:50, align:'center', band:'half', bandAlpha:55, refColor:'#ffd76a', bg:'', bgDim:30 };
+const OV_DEF = { on:false, text:{ ...OV_TEXT }, verse:{ ...OV_VERSE } };
+const ovNorm = o => { o = o || {}; const old = o.pos || o.size ? o : null;   // 예전 한 벌짜리 디자인은 두 쪽에 똑같이
+  const pick = x => x && Object.fromEntries(Object.keys(OV_TEXT).filter(k => x[k] !== undefined).map(k => [k, x[k]]));
+  return { on: o.on === true, text: { ...OV_TEXT, ...pick(o.text || old) }, verse: { ...OV_VERSE, ...pick(o.verse || old) } }; };
+const S = { docUrl:'', text:'', pres:null, media:null, msgs:[], subs:{}, fs:26, dark:null, ov:{ ...OV_DEF } };   // 서버에 저장되는 상태
 let liveMsgs = [];
 let cues = [], cur = -1, tStart = 0, tAcc = 0, tRun = false, subT;
 
@@ -480,9 +550,14 @@ function swapSub(k) { S.subs[k].swap = !S.subs[k].swap; save(); renderSubs(); }
 const trigMsg = (m, val) => pp(`v1/message/${m.uuid}/trigger`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(m.tokens.map(name => ({ name, text: { text: val[name] || '' } }))) });
 async function showSub(c) {
-  const map = S.subs[c.style], m = map && S.msgs.find(x => x.uuid === map.uuid);
-  if (!m) throw new Error(`"${c.style}" 자막 틀이 정해지지 않았습니다 (준비 화면 5번)`);
-  if (!m.tokens.length) throw new Error('자막 틀에 텍스트 토큰이 없습니다');
+  const map = S.subs[c.style], m = map && S.msgs.find(x => x.uuid === map.uuid), yt = ovOn();
+  if (!m && !yt) throw new Error(`"${c.style}" 자막 틀이 정해지지 않았습니다 (준비 화면 5번)`);
+  if (m && !m.tokens.length && !yt) throw new Error('자막 틀에 텍스트 토큰이 없습니다');
+  const ov = yt ? ovSend(ovSubPayload(c)) : null;   // 유튜브(OBS) 자막은 무대 자막과 함께
+  if (!m || !m.tokens.length) {                     // 무대용 틀이 없는 색: 유튜브에만 (무대에 떠 있던 앞 자막은 내림)
+    for (const id of liveMsgs) await pp(`v1/message/${id}/clear`).catch(() => {});
+    liveMsgs = []; await ov; return;
+  }
   const ref = map.ref && c.lines.length >= 2 ? S.msgs.find(x => x.uuid === map.ref && x.tokens.length) : null;
   const lines = ref ? c.lines.slice(1) : c.lines, val = {};
   if (m.tokens.length >= 2 && !ref) {
@@ -495,16 +570,147 @@ async function showSub(c) {
   if (S.subKeepSlide !== true) await pp('v1/clear/layer/slide').catch(() => {});   // 자막과 슬라이드가 같은 자리에 겹치지 않게
   for (const id of liveMsgs.filter(x => !want.includes(x))) await pp(`v1/message/${id}/clear`).catch(() => {});
   if (ref) await trigMsg(ref, { [ref.tokens[0]]: c.lines[0] });   // 첫 줄(성경 주소)은 전용 틀로
-  await Promise.all([trigMsg(m, val), also ? trigMsg(also, { [also.tokens[0]]: lines.join('\n') }) : null]);   // 좌우 따로 만든 틀은 동시에
+  try { await Promise.all([trigMsg(m, val), also ? trigMsg(also, { [also.tokens[0]]: lines.join('\n') }) : null]); }   // 좌우 따로 만든 틀은 동시에
+  finally { await ov; }
   liveMsgs = want;
 }
 async function hideSub() {
   const ids = liveMsgs; liveMsgs = [];
+  const ov = ovOn() || ovLive ? ovSend({ show: false }) : null;
   try { if (!ids.length) throw 0; for (const id of ids) await pp(`v1/message/${id}/clear`); } catch { await pp('v1/clear/layer/messages'); }
+  finally { await ov; }
+}
+
+/* ---------- 6. 유튜브 자막 (OBS) ---------- */
+// 서버의 /overlay 화면(OBS 브라우저 소스)에 지금 자막을 보냅니다. ProPresenter 명령과 같은 순서 줄(queued) 안에서 부릅니다.
+let ovLive = false, ovInfo = null;
+const ovOn = () => S.ov?.on === true;
+const REF_RE = /^[1-3]?\s?[가-힣A-Za-z]{1,8}\.?\s*\d+\s*[:：장]\s*\d+/;   // "요 3:16", "마 16:15-16", "요한복음 3장 16절"
+function ovSubPayload(c) {
+  const two = c.lines.length >= 2 && REF_RE.test(c.lines[0]);
+  return { show: true, kind: two ? 'verse' : 'text', style: c.style, color: c.style === '기본' ? '' : HI[c.style], first: two ? c.lines[0] : '', body: (two ? c.lines.slice(1) : c.lines).join('\n') };
+}
+async function ovSend(o) {
+  ovLive = !!o.show;
+  try { const r = await fetch('/api/overlay', { method: 'POST', body: JSON.stringify(o) }); if (!r.ok) throw new Error('HTTP ' + r.status); }
+  catch (e) { toast('유튜브 자막 전송 실패: ' + e.message); }
+}
+let ovKind = 'verse';                 // 지금 고치고 있는 쪽 (저장하지 않음)
+const KIND_NAME = { text: '일반 자막', verse: '성경 구절' };
+function setKind(k) { ovKind = k; renderOv(); }
+function ovCopyOther() {
+  const other = ovKind === 'text' ? 'verse' : 'text';
+  S.ov[other] = { ...S.ov[ovKind] }; save(); renderOv();
+  msg('ovMsg', `${KIND_NAME[ovKind]} 디자인을 ${KIND_NAME[other]}에도 똑같이 적용했습니다.`, 'ok');
+}
+function setOv(k, v) {
+  if (k === 'on') S.ov.on = v; else S.ov[ovKind][k] = v;
+  save(); renderOv();
+  if (k === 'on' && !v) queued(() => ovSend({ show: false }));   // 끄면 떠 있던 유튜브 자막도 내림
+  if (k === 'on') { renderSubs(); }
+}
+function seg(id, k, opts) {
+  $(id).innerHTML = opts.map(([v, t]) => `<button class="${S.ov[ovKind][k] === v ? 'on' : ''}" onclick="setOv('${k}', '${v}')">${t}</button>`).join('');
+}
+const REF_COLORS = [['#ffd76a', '노랑'], ['#ffffff', '흰색'], ['#9fe0b8', '연두'], ['#9fd3ff', '하늘'], ['#ffb38a', '살구']];
+function renderOv() {
+  const o = S.ov[ovKind], other = ovKind === 'text' ? 'verse' : 'text';
+  $('ovOn').checked = S.ov.on; $('ovBody').classList.toggle('off', !S.ov.on);
+  $('ovKind').innerHTML = ['text', 'verse'].map(k => `<button class="${ovKind === k ? 'on' : ''}" onclick="setKind('${k}')">${KIND_NAME[k]}</button>`).join('');
+  $('ovCopyOther').textContent = `이 디자인을 ${KIND_NAME[other]}에도 적용`;
+  $('ovKindHint').innerHTML = ovKind === 'verse'
+    ? '첫 줄이 성경 주소인 자막: <code>{{요 3:16 / 하나님이…}}</code> — 주소는 작게 위에, 본문은 아래에'
+    : '그 밖의 자막: <code>{{사랑은 받은 만큼 흘러갑니다}}</code>';
+  $('ovRefLab').classList.toggle('hidden', ovKind !== 'verse'); $('ovRef').classList.toggle('hidden', ovKind !== 'verse');
+  const full = o.mode === 'full';
+  seg('ovMode', 'mode', [['lower', '하단 자막'], ['full', '풀스크린']]);
+  document.querySelectorAll('.ovFull').forEach(e => e.classList.toggle('hidden', !full));
+  document.querySelectorAll('.ovLower').forEach(e => e.classList.toggle('hidden', full));
+  document.querySelectorAll('.ovBandRow').forEach(e => e.classList.toggle('hidden', o.band !== 'half'));
+  $('ovMarginLab').textContent = full ? '좌우 여백' : '여백';
+  $('ovDim').value = o.bgDim; $('ovDimV').textContent = o.bgDim + '%';
+  $('ovBandA').value = o.bandAlpha; $('ovBandAV').textContent = o.bandAlpha + '%';
+  if (full) renderBgList(o);
+  seg('ovPos', 'pos', [['bottom', '아래'], ['top', '위']]);
+  seg('ovAlign', 'align', [['center', '가운데'], ['left', '왼쪽']]);
+  seg('ovBand', 'band', [['none', '없음'], ['half', '반투명']]);
+  $('ovMargin').value = o.margin; $('ovMarginV').textContent = o.margin + 'px';
+  $('ovSize').value = o.size; $('ovSizeV').textContent = o.size + 'px';
+  $('ovRef').innerHTML = REF_COLORS.map(([c, t]) => `<button title="${t}" aria-label="${t}" class="${o.refColor === c ? 'on' : ''}" style="background:${c}" onclick="setOv('refColor', '${c}')"></button>`).join('')
+    + `<button class="txt${o.refColor === 'style' ? ' on' : ''}" onclick="setOv('refColor', 'style')">원고의 자막 색</button>`;
+  try { $('ovFrame').contentWindow.postMessage({ design: S.ov, sample: ovKind }, location.origin); } catch {}   // 미리보기는 저장 전에도 바로
+}
+/* 풀스크린 배경 그림·영상: 설교 리모컨 데이터 폴더(overlay-media)에 불러와 두고 일반 자막·성경 구절에서 각각 고릅니다 */
+let ovMedia = [], bgSig = '';
+const mediaUrl = n => '/overlay-media/' + encodeURIComponent(n);
+async function loadOvMedia() {
+  try { const r = await fetch('/api/overlay/media'); if (r.ok) ovMedia = (await r.json()).files || []; } catch {}
+  bgSig = ''; renderOv();
+}
+function renderBgList(o) {
+  const sig = JSON.stringify([o.bg, ovMedia.map(m => m.name)]);
+  if (sig === bgSig) return; bgSig = sig;            // 슬라이더를 움직일 때마다 영상 미리보기를 다시 불러오지 않게
+  const tile = (on, inner, click, title) => `<button class="bt${on ? ' on' : ''}" title="${esc(title)}" onclick="${click}">${inner}</button>`;
+  $('ovBgList').innerHTML = tile(!o.bg, '검정 (배경 없음)', "setOv('bg', '')", '배경 없이 검은 화면')
+    + ovMedia.map((m, i) => tile(o.bg === m.name,
+        (m.video ? `<video src="${esc(mediaUrl(m.name))}#t=1" muted preload="metadata"></video><span class="vd">▶ 영상</span>` : `<img loading="lazy" src="${esc(mediaUrl(m.name))}">`)
+        + `<span class="nm">${esc(m.name)}</span><span class="x" title="지우기" onclick="event.stopPropagation(); ovDelMedia(${i})">✕</span>`,
+        `setOv('bg', ovMedia[${i}].name)`, m.name)).join('')
+    + tile(false, '+ 그림·영상 불러오기', "$('ovFile').click()", '내 컴퓨터에서 배경 그림이나 영상을 불러옵니다');
+  if (!$('ovBgMsg').textContent) msg('ovBgMsg', '그림(jpg·png) 또는 영상(mp4·mov)을 불러오세요. 영상은 소리 없이 반복 재생됩니다. 1920×1080 크기가 가장 좋습니다.');
+}
+function upOne(file) {                                // 올리는 동안 진행률을 보여 주려고 XMLHttpRequest 사용
+  return new Promise((ok, no) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', '/api/overlay/media'); x.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+    x.upload.onprogress = e => e.lengthComputable && msg('ovBgMsg', `"${file.name}" 불러오는 중… ${Math.round(e.loaded / e.total * 100)}%`);
+    x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch {} x.status === 200 ? ok(j.name) : no(new Error(j.error || 'HTTP ' + x.status)); };
+    x.onerror = () => no(new Error('서버에 연결할 수 없습니다'));
+    x.send(file);
+  });
+}
+async function ovUpload(files) {
+  let last = '';
+  for (const f of files) {
+    try { last = await upOne(f); } catch (e) { msg('ovBgMsg', `"${f.name}"을(를) 불러오지 못했습니다: ${e.message}`, 'err'); return loadOvMedia(); }
+  }
+  if (last) { S.ov[ovKind].bg = last; save(); msg('ovBgMsg', `불러왔습니다. ${KIND_NAME[ovKind]} 배경으로 골랐습니다.`, 'ok'); }
+  loadOvMedia();
+}
+async function ovDelMedia(i) {
+  const n = ovMedia[i]?.name; if (!n || !confirm(`배경 "${n}"을(를) 지울까요?`)) return;
+  await fetch('/api/overlay/media?name=' + encodeURIComponent(n), { method: 'DELETE' });
+  for (const k of ['text', 'verse']) if (S.ov[k].bg === n) S.ov[k].bg = '';
+  save(); msg('ovBgMsg', `"${n}"을(를) 지웠습니다.`, 'ok'); loadOvMedia();
+}
+function ovFrameInit() {
+  const f = $('ovFrame'), box = $('ovPrev');
+  f.onload = () => renderOv();
+  f.src = '/overlay?preview=1';
+  const fitFrame = () => { f.style.transform = `scale(${box.clientWidth / 1920})`; };
+  new ResizeObserver(fitFrame).observe(box); fitFrame();
+}
+function ovShowUrl() {
+  if (!ovInfo) { $('ovUrl').value = ''; $('ovUrl').placeholder = '주소는 서버가 켜진 맥의 준비 화면에서 볼 수 있습니다'; $('ovCopy').classList.add('hidden'); return; }
+  $('ovUrl').value = ovInfo.local;
+  msg('ovUrlMsg', ovInfo.lan.length ? 'OBS가 다른 컴퓨터에 있으면 이 주소를 쓰세요: ' + ovInfo.lan[0] : '');
+}
+async function copyOv() {
+  const t = $('ovUrl').value; if (!t) return;
+  try { await navigator.clipboard.writeText(t); } catch { $('ovUrl').select(); document.execCommand('copy'); }
+  $('ovCopy').textContent = '복사됨 ✓'; setTimeout(() => $('ovCopy').textContent = '복사', 1800);
+}
+function ovTest(show) {
+  if (show && !ovOn()) msg('ovMsg', '"유튜브 자막 켜기"를 먼저 켜야 OBS에 보입니다.', 'err');
+  else msg('ovMsg', show ? 'OBS에 시험 자막을 띄웠습니다. (무대 스크린에는 나가지 않습니다)' : '시험 자막을 내렸습니다.', 'ok');
+  const sample = ovKind === 'verse'
+    ? { show: true, kind: 'verse', style: '파랑', color: HI['파랑'], first: '요 3:16', body: '하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니 이는 그를 믿는 자마다 멸망하지 않고 영생을 얻게 하려 하심이라' }
+    : { show: true, kind: 'text', style: '기본', color: '', first: '', body: '사랑은 받은 만큼 흘러갑니다' };
+  queued(() => ovSend(show ? sample : { show: false }));
 }
 
 function cueInfo(c) {
-  if (c.sub) return { label: '❝ ' + c.lines.join(' ').slice(0, 14), short: '자막', ok: !!S.subs[c.style] };
+  if (c.sub) return { label: '❝ ' + c.lines.join(' ').slice(0, 14), short: S.subs[c.style] ? '자막' : '유튜브 자막', ok: !!S.subs[c.style] || ovOn() };
   if (c.subClear) return { label: '✕ 자막 내림', short: '자막 내림', ok: true };
   if (c.clear) return { label: '✕ 슬라이드 지우기', short: '슬라이드 지우기', ok: true };
   if (c.bgClear) return { label: '✕ 배경 지우기', short: '배경 지우기', ok: true };
@@ -614,7 +820,7 @@ function parse(text) {
         const cue = { n: cues.length, sub: true, ...sb }; cues.push(cue);
         const two = sb.lines.length >= 2 && (S.subs[sb.style]?.ref || (S.msgs.find(x => x.uuid === S.subs[sb.style]?.uuid)?.tokens.length || 0) >= 2);
         const inner = two ? `<span class="ref">${esc(sb.lines[0])}</span>${sb.lines.slice(1).map(esc).join('<br>')}` : sb.lines.map(esc).join('<br>');
-        const bad = S.subs[sb.style] ? '' : 'border-color:var(--red);';
+        const bad = S.subs[sb.style] || ovOn() ? '' : 'border-color:var(--red);';
         out += `<button class="cue sub" id="cue${cue.n}" style="--hc:${HI[sb.style]};${bad}" onclick="fire(${cue.n})">${inner}</button>`;
         const off = { n: cues.length, subClear: true }; cues.push(off);
         out += `<button class="cue clear mini" id="cue${off.n}" onclick="fire(${off.n})">✕ 자막 내림</button>`;
@@ -679,7 +885,7 @@ async function runCue(c) {
       await trigMedia(it.uuid);
     } else {
       if (!S.pres) throw new Error('슬라이드가 연결되지 않았습니다 (준비 화면 2번)');
-      if (S.subKeepSlide !== true && liveMsgs.length) await hideSub().catch(() => {});   // 슬라이드를 띄울 때 떠 있던 자막은 내림
+      if (S.subKeepSlide !== true && (liveMsgs.length || ovLive)) await hideSub().catch(() => {});   // 슬라이드를 띄울 때 떠 있던 자막은 내림
       await pp(`v1/presentation/${S.pres.uuid}/${c.slide - 1}/trigger`);
     }
     $('dot').className = 'ok';
@@ -707,7 +913,7 @@ function mark() {
 }
 function setThumb(th, cap, c, empty) {
   let src = '', text = '';
-  if (c?.sub) { $(th).innerHTML = `<div style="padding:10px;color:#fff;font-size:12px;line-height:1.5;text-align:left;max-height:100%;overflow:hidden">${c.lines.map(esc).join('<br>')}</div>`; $(cap).textContent = '자막 · ' + c.style; return; }
+  if (c?.sub) { $(th).innerHTML = `<div style="padding:10px;color:#fff;font-size:12px;line-height:1.5;text-align:left;max-height:100%;overflow:hidden">${c.lines.map(esc).join('<br>')}</div>`; $(cap).textContent = (S.subs[c.style] ? '자막 · ' : '유튜브에만 · ') + c.style; return; }
   if (c?.subClear) { $(th).innerHTML = '자막 내림'; $(cap).textContent = ''; return; }
   if (c && c.bg !== undefined) { const it = S.media?.items[c.bg]; if (it) { src = mediaThumb(it.uuid); text = `배경 ${c.bg + 1}. ${it.name}`; } }
   else if (c && !c.clear && !c.bgClear && S.pres) { const s = S.pres.slides[c.slide - 1]; if (s) { src = thumbUrl(c.slide - 1); text = `${c.slide}. ${s.text || s.label || s.group}`; } }
@@ -742,6 +948,7 @@ async function showInfo() {
     $('infoAddr').innerHTML = i.addresses.length ? i.addresses.map(esc).join('<br>') : '<span style="color:var(--red)">네트워크에 연결되어 있지 않습니다</span>';
     $('infoPw').innerHTML = i.firstCode ? `접속 비밀번호: <b style="font-size:20px;color:var(--text)">${esc(i.firstCode)}</b> — 처음 만들어진 비밀번호입니다. 맨 아래에서 바꿀 수 있습니다.`
       : '접속 비밀번호는 이미 정해져 있습니다. 잊었다면 맨 아래 "접속 비밀번호"에서 새로 정하세요.';
+    if (i.overlay) { ovInfo = i.overlay; ovShowUrl(); }
     $('infoQuit').textContent = i.app ? '다시 켜려면 응용 프로그램의 "설교 리모컨"을 누르세요.' : '터미널 창을 닫아도 꺼집니다.';
   } catch {}
 }
@@ -760,10 +967,12 @@ async function shutdown() {
   $('setup').classList.remove('hidden'); $('pwCard').classList.toggle('hidden', !a.local);
   if (a.local) showInfo();
   try { Object.assign(S, await (await fetch('/api/state')).json()); } catch {}
+  S.ov = ovNorm(S.ov);
+  ovShowUrl(); ovFrameInit(); loadOvMedia();
   const c = await (await fetch('/api/config')).json();
   $('host').value = c.host; $('port').value = c.port;
   $('text').value = S.text || ''; $('docUrl').value = S.docUrl || '';
-  applyView(); tick(); renderSlides(); renderMedia(); renderSubs(); gStatus();
+  applyView(); tick(); renderSlides(); renderMedia(); renderSubs(); renderOv(); gStatus();
   if (await checkConn(true)) loadMsgs(false);   // 연결되면 메시지 목록을 조용히 새로 고침 (자막 틀 자동 연결)
 })();
 </script>

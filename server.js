@@ -3,7 +3,7 @@
 // Copyright 2026 조성훈 (JO SUNGHUN). PolyForm Noncommercial License 1.0.0 — LICENSE 참고.
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto'), { execFile } = require('child_process');
 
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 const PORT = parseInt(process.env.PORT, 10) || 8080;
 const DIR = __dirname;
 // 설정·비밀번호·원고를 저장하는 폴더. 맥 앱(dmg)으로 켜면 ~/Library/Application Support/설교 리모컨,
@@ -151,6 +151,111 @@ async function login(req, res) {
   res.end('{"ok":true}');
 }
 
+/* ---------- 유튜브(OBS) 자막 ---------- */
+// 무대 스크린은 ProPresenter 메시지로, 유튜브에는 이 서버가 그린 자막 화면(/overlay)을 OBS "브라우저" 소스로 겹칩니다.
+// /overlay와 오버레이용 API는 이 맥(localhost), 로그인한 기기, 또는 주소의 ?key= 가 맞을 때만 열립니다.
+// (OBS가 다른 컴퓨터에 있어도 쓸 수 있게 키는 처음 켤 때 만들어 데이터 폴더의 overlay.json에 저장)
+const OVERLAY_FILE = path.join(DATA, 'overlay.json');
+let ovKey = readJson(OVERLAY_FILE, {}).key;
+if (!/^[\w-]{16,}$/.test(ovKey || '')) { ovKey = b64url(crypto.randomBytes(18)); fs.writeFileSync(OVERLAY_FILE, JSON.stringify({ key: ovKey }, null, 2), { mode: 0o600 }); }
+const keyOk = k => typeof k === 'string' && crypto.timingSafeEqual(Buffer.from(sha(k), 'hex'), Buffer.from(sha(ovKey), 'hex'));
+const ovAllowed = (req, u) => isAuthed(req) || keyOk(u.searchParams.get('key'));
+// 디자인은 일반 자막(text)과 성경 구절(verse)을 따로 둡니다. (1.1.0 첫 시험판의 한 벌짜리 디자인은 두 쪽에 똑같이 옮김)
+// mode: 'lower' 하단 자막(영상 위에 겹침) / 'full' 풀스크린(배경 그림·영상 위에 글자). bandAlpha: 띠 진하기 %, bgDim: 배경 어둡게 %
+const OV_TEXT = { mode: 'lower', pos: 'bottom', margin: 80, size: 56, align: 'center', band: 'none', bandAlpha: 55, refColor: '#ffd76a', bg: '', bgDim: 30 };
+const OV_VERSE = { mode: 'lower', pos: 'bottom', margin: 80, size: 50, align: 'center', band: 'half', bandAlpha: 55, refColor: '#ffd76a', bg: '', bgDim: 30 };
+const cleanOne = (d, def) => {
+  d = Object.assign({}, def, d && typeof d === 'object' ? d : {});
+  const num = (v, lo, hi, dv) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : dv; };
+  return { pos: d.pos === 'top' ? 'top' : 'bottom', margin: num(d.margin, 0, 400, def.margin), size: num(d.size, 24, 120, def.size),
+    align: d.align === 'left' ? 'left' : 'center', band: d.band === 'half' ? 'half' : 'none',
+    refColor: /^#[0-9a-f]{6}$/i.test(d.refColor) ? d.refColor : d.refColor === 'style' ? 'style' : def.refColor,
+    mode: d.mode === 'full' ? 'full' : 'lower', bandAlpha: num(d.bandAlpha, 0, 100, def.bandAlpha),
+    bg: typeof d.bg === 'string' && mediaName(d.bg) === d.bg ? d.bg : '', bgDim: num(d.bgDim, 0, 90, def.bgDim) };
+};
+const cleanDesign = d => {
+  d = d && typeof d === 'object' ? d : {};
+  const old = d.pos || d.size ? d : null;            // 예전 한 벌짜리
+  return { on: d.on === true, text: cleanOne(d.text || old, OV_TEXT), verse: cleanOne(d.verse || old, OV_VERSE) };
+};
+/* 풀스크린 배경 그림·영상: 데이터 폴더의 overlay-media/에 불러옵니다 */
+const MEDIA_DIR = path.join(DATA, 'overlay-media');
+const MEDIA_EXT = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp',
+  '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/mp4', '.webm': 'video/webm' };   // .mov(H.264)는 mp4로 알려야 크롬이 재생
+const MEDIA_MAX = 1024 * 1024 * 1024;                  // 1GB
+const mediaName = n => {                               // 안전한 파일 이름만 (폴더 밖으로 못 나가게)
+  n = String(n || '').normalize('NFC');
+  return !n || n.length > 150 || /[\/\\:\x00-\x1f]/.test(n) || n.startsWith('.') || !MEDIA_EXT[path.extname(n).toLowerCase()] ? '' : n;
+};
+function mediaList() {
+  let names = []; try { names = fs.readdirSync(MEDIA_DIR); } catch {}
+  return names.map(n => n.normalize('NFC')).filter(mediaName).map(n => {
+    const st = fs.statSync(path.join(MEDIA_DIR, n));
+    return { name: n, size: st.size, video: MEDIA_EXT[path.extname(n).toLowerCase()].startsWith('video'), at: st.mtimeMs };
+  }).sort((a, b) => a.at - b.at);
+}
+async function mediaUpload(req, res) {
+  let raw = ''; try { raw = decodeURIComponent(req.headers['x-filename'] || ''); } catch {}
+  let name = path.basename(raw).normalize('NFC').replace(/[\/\\:*?"<>|\x00-\x1f]/g, '_').replace(/^\.+/, '').trim();
+  const ext = path.extname(name).toLowerCase();
+  if (!MEDIA_EXT[ext]) return send(res, 400, { error: '그림(jpg, png, gif, webp) 또는 영상(mp4, mov, m4v, webm) 파일만 불러올 수 있습니다.' });
+  if (+req.headers['content-length'] > MEDIA_MAX) return send(res, 413, { error: '파일이 너무 큽니다. (1GB까지)' });
+  const base = name.slice(0, -ext.length).slice(0, 100) || '배경';
+  name = base + ext;
+  fs.mkdirSync(MEDIA_DIR, { recursive: true });
+  for (let n = 2; fs.existsSync(path.join(MEDIA_DIR, name)); n++) name = `${base} (${n})${ext}`;
+  const tmp = path.join(MEDIA_DIR, '.upload-' + crypto.randomBytes(6).toString('hex'));
+  try {
+    await new Promise((ok, no) => {
+      const out = fs.createWriteStream(tmp); let size = 0;
+      req.on('data', c => { if ((size += c.length) > MEDIA_MAX) { no(new Error('파일이 너무 큽니다. (1GB까지)')); req.unpipe(out); out.destroy(); } });
+      req.on('aborted', () => no(new Error('올리다가 끊겼습니다.'))); req.on('error', no);
+      out.on('error', no); out.on('finish', ok);
+      req.pipe(out);
+    });
+    fs.renameSync(tmp, path.join(MEDIA_DIR, name));
+    send(res, 200, { ok: true, name });
+  } catch (e) { fs.rmSync(tmp, { force: true }); send(res, 400, { error: e.message }); }
+}
+function serveFile(req, res, file, type) {             // 영상 재생을 위해 Range(일부분) 요청을 지원
+  const st = fs.statSync(file), total = st.size, etag = `"${st.size}-${Math.floor(st.mtimeMs)}"`;
+  const head = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ETag: etag };
+  if (req.headers['if-none-match'] === etag) { res.writeHead(304, head); return res.end(); }
+  const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (m && (m[1] || m[2])) {
+    let start = m[1] ? +m[1] : Math.max(0, total - +m[2]), end = m[1] && m[2] ? Math.min(+m[2], total - 1) : total - 1;
+    if (start >= total || end < start) { res.writeHead(416, { 'Content-Range': `bytes */${total}` }); return res.end(); }
+    res.writeHead(206, { ...head, 'Content-Range': `bytes ${start}-${end}/${total}`, 'Content-Length': end - start + 1 });
+    return req.method === 'HEAD' ? res.end() : fs.createReadStream(file, { start, end }).pipe(res);
+  }
+  res.writeHead(200, { ...head, 'Content-Length': total });
+  req.method === 'HEAD' ? res.end() : fs.createReadStream(file).pipe(res);
+}
+let ovDesign = cleanDesign(readJson(STATE_FILE, {}).ov);
+let ovState = { show: false };
+const ovClients = new Set();
+// 자막 화면(overlay.html)의 판 번호: 내용이 바뀌면(업데이트) OBS에 열려 있는 옛 화면이 스스로 새로 고침합니다.
+// (서버를 다시 켜면 OBS는 연결만 다시 붙고 화면 코드는 옛것 그대로라서)
+const OV_PAGE = path.join(DIR, 'public', 'overlay.html');
+let ovRevCache = { mtime: 0, rev: '' };
+const ovRev = () => { const m = fs.statSync(OV_PAGE).mtimeMs;
+  if (m !== ovRevCache.mtime) ovRevCache = { mtime: m, rev: sha(fs.readFileSync(OV_PAGE)).slice(0, 12) }; return ovRevCache.rev; };
+const ovPayload = () => JSON.stringify({ state: ovState, design: ovDesign, rev: ovRev() });
+const ovBroadcast = () => { const m = `data: ${ovPayload()}\n\n`; for (const r of ovClients) r.write(m); };
+setInterval(() => { for (const r of ovClients) r.write('event: ping\ndata: {}\n\n'); }, 15000).unref();
+function ovEvents(req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.write(`retry: 2000\ndata: ${ovPayload()}\n\n`);       // 접속하면 지금 상태와 디자인을 바로 한 번
+  ovClients.add(res);
+  req.on('close', () => ovClients.delete(res));
+}
+function ovSet(b) {
+  const str = (v, n) => String(v ?? '').slice(0, n);
+  ovState = b && b.show ? { show: true, kind: b.kind === 'verse' || (!b.kind && b.first) ? 'verse' : 'text', style: str(b.style, 10), color: /^#[0-9a-f]{6}$/i.test(b.color) ? b.color : '', first: str(b.first, 200), body: str(b.body, 3000), at: Date.now() }
+    : { show: false, at: Date.now() };
+  ovBroadcast();
+}
+
 /* ---------- 내 구글 문서 목록 (최근 수정 순, 이름 검색) ---------- */
 async function listDocs(res, query) {
   if (!g.refresh_token) return send(res, 400, { error: '구글 계정이 연결되어 있지 않습니다.' });
@@ -274,12 +379,26 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/info') {        // 이 맥에서만: 아이패드 접속 주소와 처음 비밀번호
       if (!isLocal(req)) return send(res, 403, { error: 'forbidden' });
-      return send(res, 200, { addresses: lanAddresses(), port: PORT, firstCode, app: APP, data: DATA });
+      const q = '/overlay?key=' + encodeURIComponent(ovKey);
+      return send(res, 200, { addresses: lanAddresses(), port: PORT, firstCode, app: APP, data: DATA,
+        overlay: { local: `http://127.0.0.1:${PORT}${q}`, lan: lanAddresses().map(a => a + q) } });
     }
     if (p === '/api/shutdown') {    // 이 맥에서만: 서버 끄기
       if (!isLocal(req) || req.method !== 'POST') return send(res, 403, { error: 'forbidden' });
       send(res, 200, { ok: true });
       return setTimeout(() => process.exit(0), 300);
+    }
+    // 유튜브 자막 화면(OBS 브라우저 소스): localhost · 로그인한 기기 · 맞는 ?key= 일 때만
+    if (p === '/overlay' || p === '/overlay.html' || p === '/api/overlay/events' || p === '/api/overlay/state' || p.startsWith('/overlay-media/')) {
+      if (!ovAllowed(req, u)) return send(res, 403, { error: '주소의 key가 맞지 않습니다. 설교 리모컨 준비 화면의 "유튜브 자막 (OBS)"에서 주소를 다시 복사해 주세요.' });
+      if (p === '/api/overlay/events') return ovEvents(req, res);
+      if (p === '/api/overlay/state') return send(res, 200, { state: ovState, design: ovDesign, clients: ovClients.size });
+      if (p.startsWith('/overlay-media/')) {
+        const n = mediaName(p.slice(15)), f = n && path.join(MEDIA_DIR, n);
+        if (!n || !fs.existsSync(f)) return send(res, 404, { error: 'not found' });
+        return serveFile(req, res, f, MEDIA_EXT[path.extname(n).toLowerCase()]);
+      }
+      return send(res, 200, fs.readFileSync(OV_PAGE, 'utf8').replace('__OV_REV__', ovRev()), MIME['.html']);
     }
     if ((p.startsWith('/api/') || p.startsWith('/pp/')) && !isAuthed(req)) {
       res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8', 'X-Auth': 'required', 'Cache-Control': 'no-store' });
@@ -295,8 +414,26 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, config);
     }
     if (p === '/api/state') {
-      if (req.method === 'POST') { fs.writeFileSync(STATE_FILE, await readBody(req)); return send(res, 200, { ok: true }); }
+      if (req.method === 'POST') {
+        const body = await readBody(req);
+        fs.writeFileSync(STATE_FILE, body);
+        let d; try { d = cleanDesign(JSON.parse(body).ov); } catch {}
+        if (d && JSON.stringify(d) !== JSON.stringify(ovDesign)) { ovDesign = d; ovBroadcast(); }   // 디자인이 바뀌면 오버레이에 바로
+        return send(res, 200, { ok: true });
+      }
       return send(res, 200, readJson(STATE_FILE, {}));
+    }
+    if (p === '/api/overlay/media') {   // 로그인한 기기만: 풀스크린 배경 목록·불러오기·지우기
+      if (req.method === 'POST') return mediaUpload(req, res);
+      if (req.method === 'DELETE') {
+        const n = mediaName(u.searchParams.get('name')); if (!n) return send(res, 400, { error: '파일 이름이 올바르지 않습니다.' });
+        fs.rmSync(path.join(MEDIA_DIR, n), { force: true }); return send(res, 200, { ok: true });
+      }
+      return send(res, 200, { files: mediaList() });
+    }
+    if (p === '/api/overlay') {     // 로그인한 기기만: 지금 유튜브 자막 바꾸기
+      if (req.method !== 'POST') return send(res, 405, { error: 'POST only' });
+      ovSet(JSON.parse(String(await readBody(req)) || '{}')); return send(res, 200, { ok: true });
     }
     if (p === '/api/doc') return fetchDoc(res, u.searchParams.get('url'), u.searchParams.get('tab'));
     if (p === '/api/google/status') return send(res, 200, { configured: !!client().client_id, connected: !!g.refresh_token, email: g.email || '', local: isLocal(req), canList: canList() });

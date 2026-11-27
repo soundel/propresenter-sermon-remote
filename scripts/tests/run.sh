@@ -1,7 +1,8 @@
 #!/bin/bash
-# 다음 버튼 연타 시험 (개발자용) — 가짜 ProPresenter로 버튼을 1.5초 / 0.15초 / 0.03초 간격으로 눌러
+# 시험 (개발자용) ① 다음 버튼 연타 ② 유튜브(OBS) 자막(scripts/tests/overlay.js)
+# ① 다음 버튼 연타 시험 — 가짜 ProPresenter로 버튼을 1.5초 / 0.15초 / 0.03초 간격으로 눌러
 # 마지막에 켜진 자막("active")이 []이면 통과. 실제 ProPresenter에는 아무것도 보내지 않습니다.
-#   bash scripts/tests/run.sh      (필요: Node 18+, Google Chrome, 포트 8091·51998)
+#   bash scripts/tests/run.sh      (필요: Node 18+, Google Chrome, 포트 8091·8092·51998)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 T="$(mktemp -d)"; trap 'kill $MP $SP 2>/dev/null; rm -rf "$T"' EXIT
@@ -14,4 +15,6 @@ for gap in 1500 150 30; do
   out="$(node scripts/tests/rapid-press.js "$T/c$gap" $gap)"; echo "$out"
   echo "$out" | grep -q '"active":\[\]' || fail=1
 done
-[ $fail = 0 ] && echo "✔ 통과" || { echo "✘ 자막이 남았습니다"; exit 1; }
+[ $fail = 0 ] && echo "✔ 연타 시험 통과" || { echo "✘ 자막이 남았습니다"; exit 1; }
+{ kill $MP $SP; wait $MP $SP; } 2>/dev/null || true; sleep 0.5
+node scripts/tests/overlay.js
